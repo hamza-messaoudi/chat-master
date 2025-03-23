@@ -21,9 +21,12 @@ class WebSocketClient {
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) return;
 
+    // Use the actual host from the window location
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws?clientId=${this.clientId}`;
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws?clientId=${this.clientId}`;
     
+    console.log('Connecting to WebSocket at:', wsUrl);
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
