@@ -35,16 +35,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'message') {
           const { conversationId, content, senderId, isFromAgent } = data.payload;
           
+          let conversation;
+          
+          // First, check if the conversation exists
+          if (conversationId) {
+            conversation = await storage.getConversation(conversationId);
+          }
+          
+          // If conversation doesn't exist, create a new one
+          if (!conversation && !isFromAgent) {
+            conversation = await storage.createConversation({
+              customerId: senderId,
+              status: 'waiting'
+            });
+            
+            console.log('New conversation created from message:', conversation);
+            
+            // Broadcast new conversation to all agents
+            for (const [id, clientWs] of clients.entries()) {
+              if (id.startsWith('agent-') && clientWs.readyState === WebSocket.OPEN) {
+                clientWs.send(JSON.stringify({
+                  type: 'status',
+                  payload: {
+                    conversationId: conversation.id,
+                    status: conversation.status
+                  }
+                }));
+              }
+            }
+          }
+          
+          // If we don't have a valid conversation at this point, we can't proceed
+          if (!conversation) {
+            console.error('Cannot process message - no valid conversation found');
+            return;
+          }
+          
           // Save message to storage
           const newMessage = await storage.createMessage({
-            conversationId,
+            conversationId: conversation.id,
             senderId,
             isFromAgent,
             content
           });
           
-          // Get conversation to broadcast to right clients
-          const conversation = await storage.getConversation(conversationId);
+          // Update conversation status to active if it was waiting and this is an agent message
+          if (conversation.status === 'waiting' && isFromAgent) {
+            await storage.updateConversationStatus(conversation.id, 'active');
+            conversation.status = 'active';
+          }
           
           if (conversation) {
             // Broadcast to the customer

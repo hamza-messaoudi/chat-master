@@ -37,6 +37,11 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         // Update the conversation list to reflect new message
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
         
+        // For new conversations, force refetch to ensure it appears in the list
+        if (!allConversations?.some(conv => conv.id === message.conversationId)) {
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        }
+        
         // Show notification if the message is not in active conversation
         if (activeConversation !== message.conversationId && !message.isFromAgent) {
           toast({
@@ -60,8 +65,24 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         }
       },
       onStatusChange: (data) => {
-        // Update conversation status
+        console.log("Status change received:", data);
+        
+        // Update the specific conversation
+        if (data.conversationId) {
+          // Update conversation status or details
+          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${data.conversationId}`] });
+        }
+        
+        // Always refresh the conversations list to show new conversations, status changes, etc.
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        
+        // If this is about a conversation creation, show a notification
+        if (!allConversations?.some(conv => conv.id === data.conversationId)) {
+          toast({
+            title: "New Conversation",
+            description: `Customer conversation #${data.conversationId} has been created`,
+          });
+        }
       },
       onConnectionChange: (isConnected) => {
         setIsConnected(isConnected);
