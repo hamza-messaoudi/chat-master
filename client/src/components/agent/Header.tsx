@@ -40,7 +40,15 @@ export default function Header({ agentName = "Agent", isOnline = true, unreadCou
         </div>
         
         <div className="flex items-center gap-2">
-          <NotificationsMenu />
+          <NotificationsMenu 
+            onNotificationClick={(notification) => {
+              // Handle notification click, e.g., navigate to conversation or show details
+              if (notification.type === 'message' && notification.data?.conversationId) {
+                // Could add a callback here to open the conversation
+                console.log('Notification clicked:', notification);
+              }
+            }}
+          />
           
           <Button 
             variant="ghost" 

@@ -8,6 +8,7 @@ import WebSocketClient from "@/lib/websocket";
 import { ConversationWithLastMessage } from "@/types/chat";
 import { Message, Conversation } from "@shared/schema";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface AgentDashboardProps {
   agentId: number;
@@ -21,6 +22,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const isMobile = useIsMobile();
   
   // Set up WebSocket connection
@@ -42,10 +44,13 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         
         // Show notification if the message is not in active conversation
         if (activeConversation !== message.conversationId && !message.isFromAgent) {
-          toast({
-            title: "New Message",
-            description: `From Customer #${message.conversationId}: "${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}"`,
-          });
+          // Add to notifications system
+          addNotification(
+            "New Message",
+            `From Customer #${message.conversationId}: "${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}"`,
+            'message',
+            { conversationId: message.conversationId, messageId: message.id }
+          );
         }
       },
       onTyping: (typingIndicator) => {
@@ -55,31 +60,43 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
           // The ChatWindow will handle this directly through its webSocketClient
         } else if (typingIndicator.isTyping) {
           // Show typing notification for non-active conversations
-          toast({
-            title: "Customer is typing...",
-            description: `Customer in conversation #${typingIndicator.conversationId} is typing`,
-            duration: 3000, // Short duration since typing notifications are transient
-          });
+          addNotification(
+            "Customer is typing...",
+            `Customer in conversation #${typingIndicator.conversationId} is typing`,
+            'status',
+            { conversationId: typingIndicator.conversationId }
+          );
         }
       },
       onStatusChange: (data) => {
         // Update conversation status
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
         queryClient.invalidateQueries({ queryKey: ['conversation-messages'] });
+        
+        // Notify about status changes
+        addNotification(
+          "Conversation Status Change",
+          `Conversation #${data.conversationId} status changed to ${data.status}`,
+          'status',
+          data
+        );
       },
       onConnectionChange: (isConnected) => {
         setIsConnected(isConnected);
         if (!isConnected) {
-          toast({
-            title: "Connection Lost",
-            description: "Reconnecting to server...",
-            variant: "destructive",
-          });
+          addNotification(
+            "Connection Lost",
+            "Reconnecting to server...",
+            'system',
+            { isConnected }
+          );
         } else if (isConnected) {
-          toast({
-            title: "Connected",
-            description: "Successfully connected to server",
-          });
+          addNotification(
+            "Connected",
+            "Successfully connected to server",
+            'system',
+            { isConnected }
+          );
         }
       }
     });
@@ -90,7 +107,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     return () => {
       client.disconnect();
     };
-  }, [agentId, queryClient, toast, activeConversation]);
+  }, [agentId, queryClient, toast, addNotification, activeConversation]);
   
   // Fetch all conversations
   const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({

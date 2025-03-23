@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Message } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export interface Notification {
   id: string;
@@ -26,37 +26,10 @@ interface NotificationsMenuProps {
 }
 
 export default function NotificationsMenu({ onNotificationClick }: NotificationsMenuProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    // Calculate unread count
-    setUnreadCount(notifications.filter(n => !n.read).length);
-  }, [notifications]);
-
-  // Function to add a new notification
-  const addNotification = (notification: Notification) => {
-    setNotifications(prev => [notification, ...prev].slice(0, 50)); // Keep max 50 notifications
-  };
-
-  // Function to mark a notification as read
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
-
-  // Function to mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    );
-  };
-
-  // Function to clear all notifications
-  const clearAll = () => {
-    setNotifications([]);
-  };
+  const { notifications, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Handle notification click
   const handleClick = (notification: Notification) => {
@@ -88,7 +61,7 @@ export default function NotificationsMenu({ onNotificationClick }: Notifications
               </Button>
             )}
             {notifications.length > 0 && (
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearAll}>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearNotifications}>
                 Clear all
               </Button>
             )}
