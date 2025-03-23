@@ -87,8 +87,12 @@ export class MemStorage implements IStorage {
   
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
-    const now = new Date();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      // Ensure isAgent is never undefined
+      isAgent: insertUser.isAgent ?? false
+    };
     this.users.set(id, user);
     return user;
   }
@@ -120,8 +124,10 @@ export class MemStorage implements IStorage {
     const id = this.conversationId++;
     const now = new Date();
     const conversation: Conversation = {
-      ...insertConversation,
       id,
+      customerId: insertConversation.customerId,
+      status: insertConversation.status || "waiting",
+      agentId: insertConversation.agentId || null,
       createdAt: now,
       updatedAt: now
     };
@@ -175,20 +181,25 @@ export class MemStorage implements IStorage {
     const id = this.messageId++;
     const now = new Date();
     const message: Message = {
-      ...insertMessage,
       id,
+      conversationId: insertMessage.conversationId || null,
+      senderId: insertMessage.senderId,
+      isFromAgent: insertMessage.isFromAgent,
+      content: insertMessage.content,
       timestamp: now,
       readStatus: false
     };
     this.messages.set(id, message);
     
     // Update the conversation's updatedAt timestamp
-    const conversation = this.conversations.get(message.conversationId);
-    if (conversation) {
-      this.conversations.set(conversation.id, {
-        ...conversation,
-        updatedAt: now
-      });
+    if (message.conversationId) {
+      const conversation = this.conversations.get(message.conversationId);
+      if (conversation) {
+        this.conversations.set(conversation.id, {
+          ...conversation,
+          updatedAt: now
+        });
+      }
     }
     
     return message;
@@ -220,8 +231,10 @@ export class MemStorage implements IStorage {
   async createCannedResponse(insertCannedResponse: InsertCannedResponse): Promise<CannedResponse> {
     const id = this.cannedResponseId++;
     const cannedResponse: CannedResponse = {
-      ...insertCannedResponse,
-      id
+      id,
+      title: insertCannedResponse.title,
+      content: insertCannedResponse.content,
+      agentId: insertCannedResponse.agentId || null
     };
     this.cannedResponses.set(id, cannedResponse);
     return cannedResponse;
@@ -239,8 +252,13 @@ export class MemStorage implements IStorage {
   }
 
   async createPartner(insertPartner: InsertPartner): Promise<Partner> {
+    const now = new Date();
     const partner: Partner = {
-      ...insertPartner
+      id: insertPartner.id,
+      name: insertPartner.name,
+      domain: insertPartner.domain,
+      apiKey: insertPartner.apiKey,
+      createdAt: now
     };
     this.partners.set(partner.id, partner);
     return partner;
