@@ -6,6 +6,52 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// CORS middleware for partner integrations
+app.use(async (req, res, next) => {
+  // Get origin from request
+  const origin = req.headers.origin;
+  
+  // Always allow local development
+  if (origin === 'http://localhost:3000') {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Partner-ID');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } 
+  // For non-localhost origins, check if they match a registered partner domain
+  else if (origin) {
+    try {
+      // Get all partners
+      const { storage } = await import('./storage');
+      const partners = await storage.getAllPartners();
+      
+      // Check if the origin matches any partner's domain
+      const originDomain = new URL(origin).hostname;
+      const isAllowedPartner = partners.some(partner => {
+        const partnerDomain = partner.domain.trim().toLowerCase();
+        return originDomain.includes(partnerDomain) || 
+               originDomain === partnerDomain || 
+               originDomain.endsWith('.' + partnerDomain);
+      });
+      
+      if (isAllowedPartner) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Partner-ID');
+        res.header('Access-Control-Allow-Credentials', 'true');
+      }
+    } catch (error) {
+      console.error('Error verifying partner domain:', error);
+    }
+  }
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
