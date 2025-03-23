@@ -93,6 +93,10 @@ class WebSocketClient {
   setEventHandlers(events: Partial<WebSocketEvents>) {
     this.events = { ...this.events, ...events };
   }
+  
+  getEventHandlers(): WebSocketEvents {
+    return { ...this.events };
+  }
 
   isConnected(): boolean {
     return this.socket?.readyState === WebSocket.OPEN;

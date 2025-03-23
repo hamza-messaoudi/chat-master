@@ -161,6 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Important: Order matters! More specific routes must be defined before the generic ones
   app.get('/api/conversations/status/:status', async (req: Request, res: Response) => {
     try {
       const { status } = req.params;
@@ -172,7 +173,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/conversations/:id', async (req: Request, res: Response) => {
+  // This generic route must come after more specific routes that start with /api/conversations/
+  app.get('/api/conversations/:id([0-9]+)', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const conversation = await storage.getConversation(Number(id));

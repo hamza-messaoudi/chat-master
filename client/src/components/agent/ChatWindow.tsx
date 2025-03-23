@@ -172,6 +172,39 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
+  // Set up WebSocket event listeners for this specific conversation
+  useEffect(() => {
+    if (webSocketClient) {
+      const originalEventHandlers = webSocketClient.getEventHandlers();
+      
+      // Add typing indicator handler specifically for this chat window
+      webSocketClient.setEventHandlers({
+        ...originalEventHandlers,
+        onTyping: (typingData) => {
+          // Call original handler first
+          originalEventHandlers.onTyping(typingData);
+          
+          // Then handle specifically for this conversation
+          if (typingData.conversationId === conversationId) {
+            setCustomerIsTyping(typingData.isTyping);
+            
+            // Auto clear typing indicator after 5 seconds as a fallback
+            if (typingData.isTyping) {
+              setTimeout(() => {
+                setCustomerIsTyping(false);
+              }, 5000);
+            }
+          }
+        }
+      });
+      
+      // Restore original handlers on unmount
+      return () => {
+        webSocketClient.setEventHandlers(originalEventHandlers);
+      };
+    }
+  }, [webSocketClient, conversationId]);
+  
   // Group messages by date for displaying message groups
   const groupedMessages = messages?.reduce((groups, message) => {
     const date = new Date(message.timestamp).toLocaleDateString();

@@ -29,6 +29,8 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     
     client.setEventHandlers({
       onMessage: (message) => {
+        console.log("WebSocket message received:", message);
+        
         // Update the message cache
         queryClient.invalidateQueries({ queryKey: [`/api/conversations/${message.conversationId}/messages`] });
         
@@ -39,12 +41,23 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         if (activeConversation !== message.conversationId && !message.isFromAgent) {
           toast({
             title: "New Message",
-            description: `New message from ${message.isFromAgent ? 'Agent' : `Customer #${message.conversationId}`}`,
+            description: `From Customer #${message.conversationId}: "${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}"`,
           });
         }
       },
       onTyping: (typingIndicator) => {
-        // Handle typing indicator
+        console.log("Typing indicator received:", typingIndicator);
+        // Update customer typing status if it's for the currently active conversation
+        if (activeConversation === typingIndicator.conversationId) {
+          // The ChatWindow will handle this directly through its webSocketClient
+        } else if (typingIndicator.isTyping) {
+          // Show typing notification for non-active conversations
+          toast({
+            title: "Customer is typing...",
+            description: `Customer in conversation #${typingIndicator.conversationId} is typing`,
+            duration: 3000, // Short duration since typing notifications are transient
+          });
+        }
       },
       onStatusChange: (data) => {
         // Update conversation status
