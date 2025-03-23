@@ -41,7 +41,8 @@ export default function ConversationList({
     if (conv.lastMessage?.timestamp) {
       return formatDistanceToNow(new Date(conv.lastMessage.timestamp), { addSuffix: true });
     }
-    return formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true });
+    // Ensure we have a valid date
+    return formatDistanceToNow(conv.createdAt ? new Date(conv.createdAt) : new Date(), { addSuffix: true });
   };
   
   // Get status badge
@@ -87,13 +88,13 @@ export default function ConversationList({
   
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="p-4 border-b border-neutral-medium">
+      <div className="p-3 border-b border-neutral-medium">
         <div className="relative">
-          <span className="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-dark">search</span>
+          <span className="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-dark text-sm sm:text-base">search</span>
           <Input
             type="text"
             placeholder="Search conversations..."
-            className="w-full pl-10 pr-4 py-2"
+            className="w-full pl-9 pr-3 py-2 text-sm sm:text-base h-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -102,13 +103,13 @@ export default function ConversationList({
       
       <Tabs defaultValue="active" className="flex-grow flex flex-col overflow-hidden" onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 border-b border-neutral-medium">
-          <TabsTrigger value="active" className="py-3 data-[state=active]:text-primary">
+          <TabsTrigger value="active" className="py-2 text-xs sm:text-sm data-[state=active]:text-primary">
             Active ({activeCount})
           </TabsTrigger>
-          <TabsTrigger value="waiting" className="py-3 data-[state=active]:text-primary">
+          <TabsTrigger value="waiting" className="py-2 text-xs sm:text-sm data-[state=active]:text-primary">
             Waiting ({waitingCount})
           </TabsTrigger>
-          <TabsTrigger value="resolved" className="py-3 data-[state=active]:text-primary">
+          <TabsTrigger value="resolved" className="py-2 text-xs sm:text-sm data-[state=active]:text-primary">
             Resolved ({resolvedCount})
           </TabsTrigger>
         </TabsList>
@@ -164,8 +165,11 @@ function ConversationItems({
 }: ConversationItemsProps) {
   if (conversations.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full p-4 text-neutral-dark">
-        No conversations found
+      <div className="flex items-center justify-center h-full p-4 text-neutral-dark text-sm">
+        <div className="text-center">
+          <span className="material-icons block mx-auto mb-2 text-3xl">search_off</span>
+          No conversations found
+        </div>
       </div>
     );
   }
@@ -175,29 +179,42 @@ function ConversationItems({
       {conversations.map(conversation => (
         <div 
           key={conversation.id}
-          className={`conversation-item cursor-pointer hover:bg-neutral-light p-3 border-b border-neutral-medium ${activeConversationId === conversation.id ? 'bg-blue-50' : ''}`}
+          className={`conversation-item cursor-pointer hover:bg-neutral-light p-3 border-b border-neutral-medium transition-colors ${activeConversationId === conversation.id ? 'bg-blue-50' : ''}`}
           onClick={() => onSelectConversation(conversation.id)}
         >
           <div className="flex justify-between items-start">
-            <span className="font-medium">Customer #{conversation.customerId.slice(0, 6)}</span>
-            <span className="text-xs text-neutral-dark">
-              {conversation.lastMessage ? new Date(conversation.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+            <div className="flex items-center">
+              <div className="h-8 w-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-700 text-sm mr-2 flex-shrink-0">
+                {conversation.customerId.slice(0, 2).toUpperCase()}
+              </div>
+              <span className="font-medium text-sm">
+                Customer #{conversation.customerId.slice(0, 6)}
+              </span>
+            </div>
+            <span className="text-xs text-neutral-dark ml-2">
+              {conversation.lastMessage?.timestamp && typeof conversation.lastMessage.timestamp !== 'undefined' 
+                ? new Date(conversation.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                : ''}
             </span>
           </div>
           
-          <p className="text-sm text-neutral-dark truncate mt-1">
-            {conversation.lastMessage ? conversation.lastMessage.content : 'New conversation'}
-          </p>
-          
-          <div className="flex justify-between items-center mt-2">
-            {getStatusBadge(conversation.status)}
-            <span className="text-xs text-neutral-dark">{getTimeDisplay(conversation)}</span>
+          <div className="pl-10">
+            <p className="text-xs sm:text-sm text-neutral-dark truncate mt-1">
+              {conversation.lastMessage ? conversation.lastMessage.content : 'New conversation'}
+            </p>
             
-            {conversation.unreadCount > 0 && (
-              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-error rounded-full">
-                {conversation.unreadCount}
-              </span>
-            )}
+            <div className="flex justify-between items-center mt-1">
+              <div className="flex items-center space-x-2">
+                {getStatusBadge(conversation.status)}
+                <span className="text-xs text-neutral-dark">{getTimeDisplay(conversation)}</span>
+              </div>
+              
+              {conversation.unreadCount > 0 && (
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-error rounded-full">
+                  {conversation.unreadCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       ))}

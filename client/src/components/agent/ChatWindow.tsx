@@ -222,67 +222,102 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   return (
     <div className="flex flex-col h-full bg-neutral-light">
       {/* Chat header */}
-      <div className="p-4 bg-white border-b border-neutral-medium flex justify-between items-center">
-        <div className="flex items-center">
-          {onBack && (
-            <button 
-              onClick={onBack}
-              className="mr-2 text-neutral-dark hover:text-primary"
-            >
-              <span className="material-icons">arrow_back</span>
-            </button>
-          )}
-          <div>
-            <h2 className="font-medium">
-              Customer #{conversation?.customerId.slice(0, 6) || "Loading..."}
-            </h2>
-            <div className="text-sm text-neutral-dark">
-              {conversation && conversation.createdAt ? 
-                `Started ${formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}` : 
-                "Loading..."}
+      <div className="p-3 bg-white border-b border-neutral-medium">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="mr-2 text-neutral-dark hover:text-primary"
+                aria-label="Back to conversation list"
+              >
+                <span className="material-icons">arrow_back</span>
+              </button>
+            )}
+            <div>
+              <h2 className="font-medium text-sm sm:text-base">
+                Customer #{conversation?.customerId.slice(0, 6) || "Loading..."}
+              </h2>
+              <div className="text-xs sm:text-sm text-neutral-dark">
+                {conversation && conversation.createdAt ? 
+                  `Started ${formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}` : 
+                  "Loading..."}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
-            <span className="material-icons text-sm">history</span>
-            <span>History</span>
-          </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
-            <span className="material-icons text-sm">supervisor_account</span>
-            <span>Transfer</span>
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            className="bg-success hover:bg-green-600 text-white flex items-center gap-1"
-            onClick={handleResolveConversation}
-          >
-            <span className="material-icons text-sm">check_circle</span>
-            <span>Resolve</span>
-          </Button>
+          
+          {/* Mobile action button */}
+          <div className="md:hidden">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <span className="material-icons">more_vert</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48">
+                <div className="space-y-2">
+                  <button className="w-full text-left flex items-center gap-2 p-2 hover:bg-neutral-100 rounded-md" onClick={() => {}}>
+                    <span className="material-icons text-sm">history</span>
+                    <span>History</span>
+                  </button>
+                  <button className="w-full text-left flex items-center gap-2 p-2 hover:bg-neutral-100 rounded-md" onClick={() => {}}>
+                    <span className="material-icons text-sm">supervisor_account</span>
+                    <span>Transfer</span>
+                  </button>
+                  <button 
+                    className="w-full text-left flex items-center gap-2 p-2 hover:bg-green-100 text-green-700 rounded-md"
+                    onClick={handleResolveConversation}
+                  >
+                    <span className="material-icons text-sm">check_circle</span>
+                    <span>Resolve</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          {/* Desktop action buttons */}
+          <div className="hidden md:flex space-x-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <span className="material-icons text-sm">history</span>
+              <span>History</span>
+            </Button>
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <span className="material-icons text-sm">supervisor_account</span>
+              <span>Transfer</span>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="bg-success hover:bg-green-600 text-white flex items-center gap-1"
+              onClick={handleResolveConversation}
+            >
+              <span className="material-icons text-sm">check_circle</span>
+              <span>Resolve</span>
+            </Button>
+          </div>
         </div>
       </div>
       
       {/* Chat messages */}
-      <div className="flex-grow p-4 overflow-y-auto custom-scrollbar">
+      <div className="flex-grow p-2 sm:p-4 overflow-y-auto custom-scrollbar">
         {isLoadingMessages ? (
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-3">
             {[1, 2, 3].map(i => (
               <div key={i} className="animate-pulse">
                 <div className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`rounded-lg p-4 max-w-xs ${i % 2 === 0 ? 'bg-neutral-medium' : 'bg-blue-100'}`}>
-                    <div className="h-4 bg-neutral-light rounded w-full"></div>
-                    <div className="h-4 bg-neutral-light rounded w-3/4 mt-2"></div>
+                  <div className={`rounded-lg p-3 max-w-[80%] sm:max-w-xs ${i % 2 === 0 ? 'bg-neutral-medium' : 'bg-blue-100'}`}>
+                    <div className="h-3 bg-neutral-light rounded w-full"></div>
+                    <div className="h-3 bg-neutral-light rounded w-3/4 mt-2"></div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-3">
             {/* Conversation start message */}
-            <div className="text-center text-sm text-neutral-dark py-2">
+            <div className="text-center text-xs sm:text-sm text-neutral-dark py-2">
               Conversation started at {conversation && conversation.createdAt ? new Date(conversation.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
             </div>
             
@@ -294,14 +329,16 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                 </div>
                 
                 {dateMessages.map((message) => (
-                  <div key={message.id} className={`flex ${message.isFromAgent ? 'justify-end' : 'justify-start'}`}>
+                  <div key={message.id} className={`flex ${message.isFromAgent ? 'justify-end' : 'justify-start'} mb-2`}>
                     <div 
-                      className={`chat-bubble ${
-                        message.isFromAgent ? 'bg-primary text-white' : 'bg-white shadow-sm'
-                      }`}
+                      className={`rounded-xl p-3 ${
+                        message.isFromAgent 
+                          ? 'bg-primary text-white rounded-tr-none' 
+                          : 'bg-white shadow-sm rounded-tl-none'
+                      } max-w-[80%] sm:max-w-xs break-words`}
                     >
-                      <p>{message.content}</p>
-                      <div className={`text-xs ${message.isFromAgent ? 'text-white' : 'text-neutral-dark'} mt-1 text-right`}>
+                      <p className="text-sm sm:text-base">{message.content}</p>
+                      <div className={`text-xs ${message.isFromAgent ? 'text-white opacity-80' : 'text-neutral-dark'} mt-1 text-right`}>
                         {formatTime(message.timestamp)}
                       </div>
                     </div>
@@ -313,7 +350,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
             {/* Customer typing indicator */}
             {customerIsTyping && (
               <div className="flex justify-start">
-                <div className="typing-indicator bg-white shadow-sm">
+                <div className="typing-indicator bg-white shadow-sm rounded-xl p-2">
                   <span></span>
                   <span></span>
                   <span></span>
@@ -322,23 +359,25 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
             )}
             
             {/* Empty reference div for scrolling to bottom */}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-4" />
           </div>
         )}
       </div>
       
       {/* Response tools and input */}
-      <div className="bg-white border-t border-neutral-medium p-3">
-        <div className="mb-3">
+      <div className="bg-white border-t border-neutral-medium p-2 sm:p-3">
+        {/* Tools bar - hide on very small screens */}
+        <div className="mb-2 hidden sm:block">
           <div className="flex space-x-2 mb-2 overflow-x-auto">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Button variant="outline" size="sm" className="flex items-center gap-1 text-xs sm:text-sm h-8">
                   <span className="material-icons text-sm">bolt</span>
-                  Canned Responses
+                  <span className="hidden xs:inline">Canned Responses</span>
+                  <span className="xs:hidden">Responses</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80">
+              <PopoverContent className="w-72 sm:w-80">
                 <div className="max-h-60 overflow-y-auto">
                   {cannedResponses && cannedResponses.length > 0 ? (
                     cannedResponses.map((response) => (
@@ -362,17 +401,48 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
           </div>
         </div>
         
+        {/* Mobile floating canned responses button */}
+        <div className="sm:hidden absolute right-3 bottom-16 z-10">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" className="rounded-full h-10 w-10 p-0 shadow-md">
+                <span className="material-icons">bolt</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72">
+              <div className="max-h-60 overflow-y-auto">
+                {cannedResponses && cannedResponses.length > 0 ? (
+                  cannedResponses.map((response) => (
+                    <div 
+                      key={response.id} 
+                      className="p-2 hover:bg-neutral-light cursor-pointer"
+                      onClick={() => handleSelectCannedResponse(response)}
+                    >
+                      <div className="font-medium">{response.title}</div>
+                      <div className="text-sm text-neutral-dark truncate">{response.content}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-2 text-neutral-dark">
+                    No canned responses available. Create some for quick replies.
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        
         <div className="flex">
           <Textarea
             placeholder="Type your message..."
             value={newMessage}
             onChange={handleMessageChange}
             onKeyDown={handleKeyPress}
-            className="flex-grow p-3 rounded-l-lg resize-none"
+            className="flex-grow p-2 sm:p-3 rounded-l-lg resize-none text-sm sm:text-base"
             rows={2}
           />
           <Button 
-            className="bg-primary text-white px-4 rounded-r-lg hover:bg-blue-700"
+            className="bg-primary text-white w-12 flex-shrink-0 rounded-r-lg hover:bg-blue-700 flex items-center justify-center"
             onClick={handleSendMessage}
             disabled={!newMessage.trim()}
           >

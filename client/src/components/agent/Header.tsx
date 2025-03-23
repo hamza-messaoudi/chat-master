@@ -1,9 +1,6 @@
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
-  agentName: string;
-  isOnline: boolean;
-  unreadCount: number;
   onLogout: () => void;
 }
 

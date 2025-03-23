@@ -179,13 +179,24 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
   };
   
   return (
-    <div className="flex flex-col h-screen">
-      <Header agentName="John Smith" isOnline={isConnected} onLogout={onLogout} unreadCount={conversationsWithLastMessage.reduce((acc, conv) => acc + conv.unreadCount, 0)} />
+    <div className="flex flex-col h-screen w-full bg-neutral-50">
+      <Header onLogout={onLogout} />
       
-      <div className="flex-1 flex overflow-hidden">
-        {/* Conversation List */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Conversation List - Full width on mobile, sidebar on larger screens */}
         {(!isMobile || showConversationList) && (
-          <div className={`${isMobile ? 'w-full' : 'w-80'} bg-white border-r border-neutral-medium flex-shrink-0 overflow-hidden`}>
+          <div className={`w-full md:w-80 bg-white border-r border-neutral-medium ${isMobile ? 'h-full' : 'h-auto'} flex-shrink-0 overflow-hidden`}>
+            <div className="flex items-center justify-between p-3 md:hidden">
+              <h2 className="font-medium text-lg">Conversations</h2>
+              <div className="flex space-x-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                  {conversationsWithLastMessage.reduce((acc, conv) => acc + conv.unreadCount, 0)} unread
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {isConnected ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            </div>
             <ConversationList 
               conversations={conversationsWithLastMessage}
               activeConversationId={activeConversation}
@@ -195,9 +206,9 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
           </div>
         )}
         
-        {/* Chat Window */}
+        {/* Chat Window - Shown when conversation is selected on mobile */}
         {(!isMobile || !showConversationList) && (
-          <div className="flex-grow">
+          <div className="flex-grow h-full">
             {activeConversation ? (
               <ChatWindow 
                 conversationId={activeConversation}
@@ -206,17 +217,29 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
                 onBack={isMobile ? handleBackToList : undefined}
               />
             ) : (
-              <div className="h-full flex items-center justify-center bg-neutral-light">
-                <div className="text-center p-4">
-                  <span className="material-icons text-6xl text-neutral-dark mb-4">chat</span>
-                  <h2 className="text-xl font-medium text-neutral-dark">Select a conversation</h2>
-                  <p className="text-neutral-dark mt-2">Choose a conversation from the list to start chatting</p>
+              <div className="h-full flex items-center justify-center bg-neutral-light p-4">
+                <div className="text-center max-w-sm">
+                  <span className="material-icons text-5xl sm:text-6xl text-neutral-dark mb-4">chat</span>
+                  <h2 className="text-lg sm:text-xl font-medium text-neutral-dark">Select a conversation</h2>
+                  <p className="text-neutral-dark mt-2 text-sm sm:text-base">Choose a conversation from the list to start chatting</p>
                 </div>
               </div>
             )}
           </div>
         )}
       </div>
+      
+      {/* Bottom navigation for mobile */}
+      {isMobile && activeConversation && !showConversationList && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 flex justify-center items-center p-2 bg-white border-t border-neutral-medium">
+          <button 
+            onClick={handleBackToList}
+            className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md"
+          >
+            <span className="material-icons">list</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
