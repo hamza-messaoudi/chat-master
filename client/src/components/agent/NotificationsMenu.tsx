@@ -29,7 +29,7 @@ export default function NotificationsMenu({ onNotificationClick }: Notifications
   const { notifications, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
   
   // Calculate unread count
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length;
 
   // Handle notification click
   const handleClick = (notification: Notification) => {
@@ -55,7 +55,7 @@ export default function NotificationsMenu({ onNotificationClick }: Notifications
         <div className="flex items-center justify-between p-2">
           <DropdownMenuLabel className="text-sm">Notifications</DropdownMenuLabel>
           <div className="flex gap-1">
-            {notifications.some(n => !n.read) && (
+            {notifications.some((n: Notification) => !n.read) && (
               <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={markAllAsRead}>
                 Mark all read
               </Button>
