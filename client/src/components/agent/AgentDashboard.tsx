@@ -185,7 +185,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
       <div className="flex-1 flex overflow-hidden">
         {/* Conversation List */}
         {(!isMobile || showConversationList) && (
-          <div className={`${isMobile ? 'w-full' : 'w-80'} bg-white border-r border-neutral-medium flex-shrink-0`}>
+          <div className={`${isMobile ? 'w-full' : 'w-80'} bg-white border-r border-neutral-medium flex-shrink-0 overflow-hidden`}>
             <ConversationList 
               conversations={conversationsWithLastMessage}
               activeConversationId={activeConversation}

@@ -359,14 +359,6 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span className="material-icons text-sm">attach_file</span>
-              Attach
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span className="material-icons text-sm">emoji_emotions</span>
-              Emoji
-            </Button>
           </div>
         </div>
         

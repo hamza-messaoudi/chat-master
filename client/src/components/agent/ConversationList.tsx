@@ -86,7 +86,7 @@ export default function ConversationList({
   }
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b border-neutral-medium">
         <div className="relative">
           <span className="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-dark">search</span>
@@ -100,7 +100,7 @@ export default function ConversationList({
         </div>
       </div>
       
-      <Tabs defaultValue="active" className="flex-grow flex flex-col" onValueChange={setActiveTab}>
+      <Tabs defaultValue="active" className="flex-grow flex flex-col overflow-hidden" onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 border-b border-neutral-medium">
           <TabsTrigger value="active" className="py-3 data-[state=active]:text-primary">
             Active ({activeCount})
@@ -113,7 +113,7 @@ export default function ConversationList({
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="active" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0">
+        <TabsContent value="active" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0 h-0">
           <ConversationItems
             conversations={filteredConversations} 
             activeConversationId={activeConversationId}
@@ -123,7 +123,7 @@ export default function ConversationList({
           />
         </TabsContent>
         
-        <TabsContent value="waiting" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0">
+        <TabsContent value="waiting" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0 h-0">
           <ConversationItems
             conversations={filteredConversations} 
             activeConversationId={activeConversationId}
@@ -133,7 +133,7 @@ export default function ConversationList({
           />
         </TabsContent>
         
-        <TabsContent value="resolved" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0">
+        <TabsContent value="resolved" className="flex-grow overflow-y-auto overflow-x-hidden custom-scrollbar m-0 p-0 h-0">
           <ConversationItems
             conversations={filteredConversations} 
             activeConversationId={activeConversationId}
