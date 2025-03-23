@@ -23,11 +23,6 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  // Fetch all conversations
-  const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({
-    queryKey: ['/api/conversations'],
-  });
-  
   // Set up WebSocket connection
   useEffect(() => {
     const client = new WebSocketClient(`agent-${agentId}`);
@@ -41,11 +36,6 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         
         // Update the conversation list to reflect new message
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-        
-        // For new conversations, force refetch to ensure it appears in the list
-        if (!allConversations?.some(conv => conv.id === message.conversationId)) {
-          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-        }
         
         // Show notification if the message is not in active conversation
         if (activeConversation !== message.conversationId && !message.isFromAgent) {
@@ -70,24 +60,8 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         }
       },
       onStatusChange: (data) => {
-        console.log("Status change received:", data);
-        
-        // Update the specific conversation
-        if (data.conversationId) {
-          // Update conversation status or details
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${data.conversationId}`] });
-        }
-        
-        // Always refresh the conversations list to show new conversations, status changes, etc.
+        // Update conversation status
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-        
-        // If this is about a conversation creation, show a notification
-        if (!allConversations?.some(conv => conv.id === data.conversationId)) {
-          toast({
-            title: "New Conversation",
-            description: `Customer conversation #${data.conversationId} has been created`,
-          });
-        }
       },
       onConnectionChange: (isConnected) => {
         setIsConnected(isConnected);
@@ -112,29 +86,22 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     return () => {
       client.disconnect();
     };
-  }, [agentId, queryClient, toast, activeConversation, allConversations]);
+  }, [agentId, queryClient, toast, activeConversation]);
   
-  // Fetch all messages for all conversations
-  const messageQueries = allConversations?.map(conversation => {
-    return {
-      conversationId: conversation.id,
-      queryKey: `/api/conversations/${conversation.id}/messages`,
-    };
-  }) || [];
-  
-  // Create a separate query for each conversation's messages
-  const messageResults = messageQueries.map(query => {
-    return useQuery<Message[]>({
-      queryKey: [query.queryKey],
-      enabled: !!query.conversationId,
-    });
+  // Fetch all conversations
+  const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({
+    queryKey: ['/api/conversations'],
   });
   
-  // Process the conversations with last messages
-  const conversationsWithLastMessage = allConversations?.map((conversation, index) => {
-    const messages = messageResults[index]?.data || [];
-    const lastMessage = messages.length ? messages[messages.length - 1] : undefined;
-    const unreadCount = messages.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
+  // Fetch messages for each conversation to get the last message
+  const conversationsWithLastMessage = allConversations?.map(conversation => {
+    const { data: messages } = useQuery<Message[]>({
+      queryKey: [`/api/conversations/${conversation.id}/messages`],
+      enabled: !!conversation.id,
+    });
+    
+    const lastMessage = messages?.length ? messages[messages.length - 1] : undefined;
+    const unreadCount = messages?.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
     
     return {
       ...conversation,

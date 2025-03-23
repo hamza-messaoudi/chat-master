@@ -35,55 +35,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'message') {
           const { conversationId, content, senderId, isFromAgent } = data.payload;
           
-          let conversation;
-          
-          // First, check if the conversation exists
-          if (conversationId) {
-            conversation = await storage.getConversation(conversationId);
-          }
-          
-          // If conversation doesn't exist, create a new one
-          if (!conversation && !isFromAgent) {
-            conversation = await storage.createConversation({
-              customerId: senderId,
-              status: 'waiting'
-            });
-            
-            console.log('New conversation created from message:', conversation);
-            
-            // Broadcast new conversation to all agents
-            for (const [id, clientWs] of clients.entries()) {
-              if (id.startsWith('agent-') && clientWs.readyState === WebSocket.OPEN) {
-                clientWs.send(JSON.stringify({
-                  type: 'status',
-                  payload: {
-                    conversationId: conversation.id,
-                    status: conversation.status
-                  }
-                }));
-              }
-            }
-          }
-          
-          // If we don't have a valid conversation at this point, we can't proceed
-          if (!conversation) {
-            console.error('Cannot process message - no valid conversation found');
-            return;
-          }
-          
           // Save message to storage
           const newMessage = await storage.createMessage({
-            conversationId: conversation.id,
+            conversationId,
             senderId,
             isFromAgent,
             content
           });
           
-          // Update conversation status to active if it was waiting and this is an agent message
-          if (conversation.status === 'waiting' && isFromAgent) {
-            await storage.updateConversationStatus(conversation.id, 'active');
-            conversation.status = 'active';
-          }
+          // Get conversation to broadcast to right clients
+          const conversation = await storage.getConversation(conversationId);
           
           if (conversation) {
             // Broadcast to the customer
@@ -189,12 +150,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // 2. Agent conversation routes - get all conversations for agent dashboard
+  // 2. Agent conversation routes
   app.get('/api/conversations', async (req: Request, res: Response) => {
     try {
-      // This endpoint returns ALL conversations for agents to see
       const conversations = await storage.getAllActiveConversations();
-      console.log(`Fetched ${conversations.length} conversations for agent dashboard`);
       return res.json(conversations);
     } catch (error) {
       console.error('Error fetching all conversations:', error);

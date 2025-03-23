@@ -18,15 +18,13 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [webSocketClient, setWebSocketClient] = useState<WebSocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [localConversationId, setLocalConversationId] = useState<number | null>(conversationId || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch messages - only if we have a conversation ID
+  // Fetch messages
   const { data: messages, isLoading: isLoadingMessages } = useQuery<Message[]>({
-    queryKey: [`/api/conversations/${localConversationId}/messages`],
-    enabled: !!localConversationId,
+    queryKey: [`/api/conversations/${conversationId}/messages`],
   });
   
   // Set up WebSocket connection
@@ -35,15 +33,8 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     
     client.setEventHandlers({
       onMessage: (message) => {
-        // If this is our first message and we don't have a conversation ID yet, set it
-        if (!localConversationId && message.conversationId) {
-          setLocalConversationId(message.conversationId);
-        }
-        
         // Refetch messages when a new message is received
-        if (localConversationId) {
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${localConversationId}/messages`] });
-        }
+        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
         
         // If it's from an agent, play a notification sound
         if (message.isFromAgent) {
@@ -51,7 +42,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
         }
       },
       onTyping: (typingIndicator) => {
-        if (typingIndicator.conversationId === localConversationId) {
+        if (typingIndicator.conversationId === conversationId) {
           setAgentIsTyping(typingIndicator.isTyping);
         }
       },
@@ -66,7 +57,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     return () => {
       client.disconnect();
     };
-  }, [customerId, queryClient]);
+  }, [customerId, conversationId]);
   
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -82,7 +73,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     try {
       // Send via WebSocket
       webSocketClient.send('message', {
-        conversationId: localConversationId,
+        conversationId,
         content: newMessage,
         senderId: customerId,
         isFromAgent: false
@@ -98,7 +89,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
       }
       setIsTyping(false);
       webSocketClient.send('typing', {
-        conversationId: localConversationId,
+        conversationId,
         isTyping: false,
         isAgent: false
       });
@@ -118,7 +109,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     if (!isTyping && webSocketClient) {
       setIsTyping(true);
       webSocketClient.send('typing', {
-        conversationId: localConversationId,
+        conversationId,
         isTyping: true,
         isAgent: false
       });
@@ -134,7 +125,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
       setIsTyping(false);
       if (webSocketClient) {
         webSocketClient.send('typing', {
-          conversationId: localConversationId,
+          conversationId,
           isTyping: false,
           isAgent: false
         });
@@ -160,17 +151,8 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   
   // Handle ending the chat
   const handleEndChat = async () => {
-    // Only attempt to end chat if we have a valid conversation ID
-    if (!localConversationId) {
-      toast({
-        title: "No active conversation",
-        description: "There is no active conversation to end.",
-      });
-      return;
-    }
-
     try {
-      await fetch(`/api/conversations/${localConversationId}/status`, {
+      await fetch(`/api/conversations/${conversationId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' }),
