@@ -107,7 +107,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     return () => {
       client.disconnect();
     };
-  }, [agentId, queryClient, toast, activeConversation]);
+  }, [agentId, queryClient, toast, activeConversation, allConversations]);
   
   // Fetch all conversations
   const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({

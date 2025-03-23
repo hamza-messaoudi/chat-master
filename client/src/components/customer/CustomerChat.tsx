@@ -18,13 +18,15 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [webSocketClient, setWebSocketClient] = useState<WebSocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [localConversationId, setLocalConversationId] = useState<number | null>(conversationId || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch messages
+  // Fetch messages - only if we have a conversation ID
   const { data: messages, isLoading: isLoadingMessages } = useQuery<Message[]>({
-    queryKey: [`/api/conversations/${conversationId}/messages`],
+    queryKey: [`/api/conversations/${localConversationId}/messages`],
+    enabled: !!localConversationId,
   });
   
   // Set up WebSocket connection
@@ -33,8 +35,15 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     
     client.setEventHandlers({
       onMessage: (message) => {
+        // If this is our first message and we don't have a conversation ID yet, set it
+        if (!localConversationId && message.conversationId) {
+          setLocalConversationId(message.conversationId);
+        }
+        
         // Refetch messages when a new message is received
-        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
+        if (localConversationId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${localConversationId}/messages`] });
+        }
         
         // If it's from an agent, play a notification sound
         if (message.isFromAgent) {
@@ -42,7 +51,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
         }
       },
       onTyping: (typingIndicator) => {
-        if (typingIndicator.conversationId === conversationId) {
+        if (typingIndicator.conversationId === localConversationId) {
           setAgentIsTyping(typingIndicator.isTyping);
         }
       },
@@ -57,7 +66,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     return () => {
       client.disconnect();
     };
-  }, [customerId, conversationId]);
+  }, [customerId, queryClient]);
   
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -73,7 +82,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     try {
       // Send via WebSocket
       webSocketClient.send('message', {
-        conversationId,
+        conversationId: localConversationId,
         content: newMessage,
         senderId: customerId,
         isFromAgent: false
@@ -89,7 +98,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
       }
       setIsTyping(false);
       webSocketClient.send('typing', {
-        conversationId,
+        conversationId: localConversationId,
         isTyping: false,
         isAgent: false
       });
@@ -109,7 +118,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     if (!isTyping && webSocketClient) {
       setIsTyping(true);
       webSocketClient.send('typing', {
-        conversationId,
+        conversationId: localConversationId,
         isTyping: true,
         isAgent: false
       });
@@ -125,7 +134,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
       setIsTyping(false);
       if (webSocketClient) {
         webSocketClient.send('typing', {
-          conversationId,
+          conversationId: localConversationId,
           isTyping: false,
           isAgent: false
         });
