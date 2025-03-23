@@ -37,6 +37,9 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         // Update the conversation list to reflect new message
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
         
+        // Update the conversation messages
+        queryClient.invalidateQueries({ queryKey: ['conversation-messages'] });
+        
         // Show notification if the message is not in active conversation
         if (activeConversation !== message.conversationId && !message.isFromAgent) {
           toast({
@@ -62,6 +65,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
       onStatusChange: (data) => {
         // Update conversation status
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['conversation-messages'] });
       },
       onConnectionChange: (isConnected) => {
         setIsConnected(isConnected);
@@ -93,17 +97,27 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     queryKey: ['/api/conversations'],
   });
   
-  // Fetch all messages for all active conversations in a single query
-  const { data: allMessages } = useQuery<Message[]>({
-    queryKey: ['/api/all-messages'],
+  // Fetch all messages for each conversation separately
+  const { data: lastMessages = [], isLoading: isLoadingMessages } = useQuery<Message[]>({
+    queryKey: ['conversation-messages'],
     queryFn: async () => {
       if (!allConversations || allConversations.length === 0) return [];
       
-      // Fetch messages for each conversation
-      const messagePromises = allConversations.map(conversation => 
-        fetch(`/api/conversations/${conversation.id}/messages`)
-          .then(res => res.json())
-      );
+      // Fetch the latest message for each conversation
+      const messagePromises = allConversations.map(async conversation => {
+        try {
+          const response = await fetch(`/api/conversations/${conversation.id}/messages`);
+          if (!response.ok) {
+            console.error(`Failed to fetch messages for conversation ${conversation.id}`);
+            return [];
+          }
+          const messages = await response.json();
+          return messages; // Return all messages, we'll filter to the last one later
+        } catch (error) {
+          console.error(`Error fetching messages for conversation ${conversation.id}:`, error);
+          return [];
+        }
+      });
       
       // Combine all messages
       const allMessagesArrays = await Promise.all(messagePromises);
@@ -117,11 +131,11 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     if (!allConversations) return [];
     
     return allConversations.map(conversation => {
-      const conversationMessages = allMessages?.filter(m => m.conversationId === conversation.id) || [];
+      const conversationMessages = lastMessages.filter((m: Message) => m.conversationId === conversation.id);
       const lastMessage = conversationMessages.length > 0 
         ? conversationMessages[conversationMessages.length - 1] 
         : undefined;
-      const unreadCount = conversationMessages.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
+      const unreadCount = conversationMessages.filter((msg: Message) => !msg.readStatus && !msg.isFromAgent).length || 0;
       
       return {
         ...conversation,
@@ -129,7 +143,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         unreadCount
       } as ConversationWithLastMessage;
     });
-  }, [allConversations, allMessages]);
+  }, [allConversations, lastMessages]);
   
   // Handle selecting a conversation
   const handleSelectConversation = async (conversationId: number) => {
@@ -152,6 +166,7 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         
         // Update the conversations cache
         queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['conversation-messages'] });
       } catch (error) {
         console.error('Error assigning conversation:', error);
       }
