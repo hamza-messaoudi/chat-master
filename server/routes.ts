@@ -1,17 +1,16 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { PostgresStorage } from "./db-storage";
+import { storage } from "./storage";
 import { z } from "zod";
 import { 
   insertConversationSchema, 
   insertMessageSchema, 
   insertCannedResponseSchema,
+  insertPartnerSchema,
   type WebSocketMessage
 } from "@shared/schema";
-
-// Use database storage
-const storage = new PostgresStorage();
+import { partnerAuthMiddleware } from "./partners";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -356,6 +355,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating canned response:', error);
       return res.status(500).json({ error: 'Failed to create canned response' });
+    }
+  });
+
+  // 5. Partner routes
+  // Partner API for integration - these routes require API key authentication
+  app.post('/api/partner/register', async (req: Request, res: Response) => {
+    try {
+      // This is an admin-only endpoint for registering new partners
+      const { name, domain } = req.body;
+      
+      if (!name || !domain) {
+        return res.status(400).json({ error: 'Partner name and domain are required' });
+      }
+      
+      // Import createPartner dynamically to avoid circular dependencies
+      const { createPartner } = await import('./partners');
+      
+      const partner = await createPartner(name, domain);
+      return res.status(201).json({
+        message: 'Partner successfully registered',
+        partnerId: partner.partnerId,
+        apiKey: partner.apiKey,
+        name: partner.name,
+        domain: partner.domain
+      });
+    } catch (error) {
+      console.error('Error registering partner:', error);
+      return res.status(500).json({ error: 'Failed to register partner' });
+    }
+  });
+  
+  // Routes requiring API key authentication
+  app.post('/api/partner/conversations', partnerAuthMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { customerId } = req.body;
+      
+      if (!customerId) {
+        return res.status(400).json({ error: 'Customer ID is required' });
+      }
+      
+      const conversation = await storage.createConversation({
+        customerId,
+        status: 'waiting'
+      });
+      
+      return res.status(201).json(conversation);
+    } catch (error) {
+      console.error('Error creating partner conversation:', error);
+      return res.status(500).json({ error: 'Failed to create conversation' });
+    }
+  });
+  
+  app.get('/api/partner/conversations/:customerId', partnerAuthMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { customerId } = req.params;
+      const conversations = await storage.getConversationsByCustomerId(customerId);
+      return res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching partner conversations:', error);
+      return res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+  });
+  
+  app.post('/api/partner/messages', partnerAuthMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { conversationId, content, senderId, isFromAgent } = req.body;
+      
+      if (!conversationId || !content || !senderId) {
+        return res.status(400).json({ error: 'Conversation ID, content and sender ID are required' });
+      }
+      
+      const message = await storage.createMessage({
+        conversationId,
+        senderId,
+        isFromAgent: isFromAgent || false,
+        content
+      });
+      
+      return res.status(201).json(message);
+    } catch (error) {
+      console.error('Error creating partner message:', error);
+      return res.status(500).json({ error: 'Failed to create message' });
+    }
+  });
+  
+  app.get('/api/partner/messages/:conversationId', partnerAuthMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
+      const messages = await storage.getMessagesByConversationId(Number(conversationId));
+      return res.json(messages);
+    } catch (error) {
+      console.error('Error fetching partner messages:', error);
+      return res.status(500).json({ error: 'Failed to fetch messages' });
     }
   });
   
