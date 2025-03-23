@@ -1,7 +1,8 @@
-import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "wouter";
+import { Code, ExternalLink } from "lucide-react";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -65,6 +66,19 @@ export default function Home() {
             </Button>
           </CardFooter>
         </Card>
+      </div>
+      
+      <div className="w-full max-w-3xl mx-auto mt-12 text-center">
+        <h2 className="text-2xl font-bold mb-4">Partner Integration</h2>
+        <p className="mb-6">
+          Are you a business looking to integrate our support chat into your website?
+          Check out our partner documentation for API details and integration options.
+        </p>
+        <Link href="/partner-docs">
+          <Button className="bg-primary/90 hover:bg-primary px-6">
+            <Code className="mr-2 h-4 w-4" /> Partner Documentation <ExternalLink className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
       </div>
     </div>
   );
