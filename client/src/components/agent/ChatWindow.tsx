@@ -44,12 +44,38 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
     queryKey: [`/api/canned-responses/${agentId}`],
   });
   
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change and mark messages as read
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+    
+    // Mark unread messages as read
+    if (messages && messages.length > 0) {
+      messages.forEach(message => {
+        if (!message.readStatus && !message.isFromAgent) {
+          markMessageAsRead(message.id);
+        }
+      });
+    }
   }, [messages]);
+  
+  // Function to mark a message as read
+  const markMessageAsRead = async (messageId: number) => {
+    try {
+      await fetch(`/api/messages/${messageId}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      // Invalidate queries to update UI
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversation-messages'] });
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  };
   
   // Handle sending a message
   const handleSendMessage = async () => {

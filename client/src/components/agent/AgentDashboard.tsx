@@ -178,9 +178,19 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     setShowConversationList(true);
   };
   
+  // Calculate total unread count across all conversations
+  const totalUnreadCount = useMemo(() => {
+    return conversationsWithLastMessage.reduce((acc, conv) => acc + conv.unreadCount, 0) || 0;
+  }, [conversationsWithLastMessage]);
+
   return (
     <div className="flex flex-col h-screen w-full bg-neutral-50">
-      <Header onLogout={onLogout} />
+      <Header 
+        agentName={`Agent ${agentId}`}
+        isOnline={isConnected}
+        unreadCount={totalUnreadCount}
+        onLogout={onLogout} 
+      />
       
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Conversation List - Full width on mobile, sidebar on larger screens */}
@@ -188,14 +198,6 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
           <div className={`w-full md:w-80 bg-white border-r border-neutral-medium ${isMobile ? 'h-full' : 'h-auto'} flex-shrink-0 overflow-hidden`}>
             <div className="flex items-center justify-between p-3 md:hidden">
               <h2 className="font-medium text-lg">Conversations</h2>
-              <div className="flex space-x-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
-                  {conversationsWithLastMessage.reduce((acc, conv) => acc + conv.unreadCount, 0)} unread
-                </span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {isConnected ? 'Online' : 'Offline'}
-                </span>
-              </div>
             </div>
             <ConversationList 
               conversations={conversationsWithLastMessage}
@@ -228,18 +230,6 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
           </div>
         )}
       </div>
-      
-      {/* Bottom navigation for mobile */}
-      {isMobile && activeConversation && !showConversationList && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 flex justify-center items-center p-2 bg-white border-t border-neutral-medium">
-          <button 
-            onClick={handleBackToList}
-            className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md"
-          >
-            <span className="material-icons">list</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }
