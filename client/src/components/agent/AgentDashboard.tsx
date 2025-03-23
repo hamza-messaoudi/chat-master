@@ -114,15 +114,27 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     };
   }, [agentId, queryClient, toast, activeConversation, allConversations]);
   
-  // Fetch messages for each conversation to get the last message
-  const conversationsWithLastMessage = allConversations?.map(conversation => {
-    const { data: messages } = useQuery<Message[]>({
-      queryKey: [`/api/conversations/${conversation.id}/messages`],
-      enabled: !!conversation.id,
+  // Fetch all messages for all conversations
+  const messageQueries = allConversations?.map(conversation => {
+    return {
+      conversationId: conversation.id,
+      queryKey: `/api/conversations/${conversation.id}/messages`,
+    };
+  }) || [];
+  
+  // Create a separate query for each conversation's messages
+  const messageResults = messageQueries.map(query => {
+    return useQuery<Message[]>({
+      queryKey: [query.queryKey],
+      enabled: !!query.conversationId,
     });
-    
-    const lastMessage = messages?.length ? messages[messages.length - 1] : undefined;
-    const unreadCount = messages?.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
+  });
+  
+  // Process the conversations with last messages
+  const conversationsWithLastMessage = allConversations?.map((conversation, index) => {
+    const messages = messageResults[index]?.data || [];
+    const lastMessage = messages.length ? messages[messages.length - 1] : undefined;
+    const unreadCount = messages.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
     
     return {
       ...conversation,
