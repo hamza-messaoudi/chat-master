@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { storage } from "./storage";
+import { PostgresStorage } from "./db-storage";
 import { z } from "zod";
 import { 
   insertConversationSchema, 
@@ -9,6 +9,9 @@ import {
   insertCannedResponseSchema,
   type WebSocketMessage
 } from "@shared/schema";
+
+// Use database storage
+const storage = new PostgresStorage();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
