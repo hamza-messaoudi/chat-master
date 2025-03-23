@@ -178,7 +178,8 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   };
   
   // Format timestamp for display
-  const formatTime = (timestamp: Date) => {
+  const formatTime = (timestamp: Date | null) => {
+    if (!timestamp) return "--:--";
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   

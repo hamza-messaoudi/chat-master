@@ -168,7 +168,8 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   };
   
   // Format timestamp for display
-  const formatTime = (timestamp: Date) => {
+  const formatTime = (timestamp: Date | null) => {
+    if (!timestamp) return "--:--";
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
@@ -207,7 +208,10 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   
   // Group messages by date for displaying message groups
   const groupedMessages = messages?.reduce((groups, message) => {
-    const date = new Date(message.timestamp).toLocaleDateString();
+    // Ensure timestamp is valid before creating a Date object
+    const timestamp = message.timestamp ? new Date(message.timestamp) : new Date();
+    const date = timestamp.toLocaleDateString();
+    
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -233,7 +237,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
               Customer #{conversation?.customerId.slice(0, 6) || "Loading..."}
             </h2>
             <div className="text-sm text-neutral-dark">
-              {conversation ? 
+              {conversation && conversation.createdAt ? 
                 `Started ${formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}` : 
                 "Loading..."}
             </div>
@@ -279,7 +283,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
           <div className="flex flex-col space-y-4">
             {/* Conversation start message */}
             <div className="text-center text-sm text-neutral-dark py-2">
-              Conversation started at {conversation ? new Date(conversation.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+              Conversation started at {conversation && conversation.createdAt ? new Date(conversation.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
             </div>
             
             {/* Messages grouped by date */}
