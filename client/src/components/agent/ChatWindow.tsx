@@ -392,50 +392,20 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       
       {/* Response tools and input */}
       <div className="bg-white border-t border-neutral-medium p-2 sm:p-3">
-        {/* Tools bar - hide on very small screens */}
-        <div className="mb-2 hidden sm:block">
-          <div className="flex space-x-2 mb-2 overflow-x-auto">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-1 text-xs sm:text-sm h-8">
-                  <span className="material-icons text-sm">bolt</span>
-                  <span className="hidden xs:inline">Canned Responses</span>
-                  <span className="xs:hidden">Responses</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 sm:w-80">
-                <div className="max-h-60 overflow-y-auto">
-                  {cannedResponses && cannedResponses.length > 0 ? (
-                    cannedResponses.map((response) => (
-                      <div 
-                        key={response.id} 
-                        className="p-2 hover:bg-neutral-light cursor-pointer"
-                        onClick={() => handleSelectCannedResponse(response)}
-                      >
-                        <div className="font-medium">{response.title}</div>
-                        <div className="text-sm text-neutral-dark truncate">{response.content}</div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-2 text-neutral-dark">
-                      No canned responses available. Create some for quick replies.
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        
-        {/* Mobile floating canned responses button */}
-        <div className="sm:hidden absolute right-3 bottom-16 z-10">
+        <div className="flex items-center gap-2">
+          {/* Canned responses dropdown */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" className="rounded-full h-10 w-10 p-0 shadow-md">
-                <span className="material-icons">bolt</span>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-8 w-8 rounded-full flex-shrink-0"
+                aria-label="Canned Responses"
+              >
+                <span className="material-icons text-sm">bolt</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72">
+            <PopoverContent className="w-72 sm:w-80">
               <div className="max-h-60 overflow-y-auto">
                 {cannedResponses && cannedResponses.length > 0 ? (
                   cannedResponses.map((response) => (
@@ -456,24 +426,26 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
               </div>
             </PopoverContent>
           </Popover>
-        </div>
-        
-        <div className="flex">
-          <Textarea
-            placeholder="Type your message..."
-            value={newMessage}
-            onChange={handleMessageChange}
-            onKeyDown={handleKeyPress}
-            className="flex-grow p-2 sm:p-3 rounded-l-lg resize-none text-sm sm:text-base"
-            rows={2}
-          />
-          <Button 
-            className="bg-primary text-white w-12 flex-shrink-0 rounded-r-lg hover:bg-blue-700 flex items-center justify-center"
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
-          >
-            <span className="material-icons">send</span>
-          </Button>
+          
+          {/* Message input and send button */}
+          <div className="flex-1 flex items-center gap-2 bg-neutral-50 rounded-full border border-neutral-medium overflow-hidden shadow-sm">
+            <Textarea
+              placeholder="Type your message..."
+              value={newMessage}
+              onChange={handleMessageChange}
+              onKeyDown={handleKeyPress}
+              className="flex-grow py-2 px-4 resize-none text-sm min-h-0 border-none focus-visible:ring-0 bg-transparent"
+              rows={1}
+            />
+            <Button 
+              className="rounded-full h-8 w-8 p-0 flex items-center justify-center bg-primary text-white hover:bg-primary/90 mr-1"
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim()}
+              size="icon"
+            >
+              <span className="material-icons text-sm">send</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
