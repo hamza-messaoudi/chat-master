@@ -2,7 +2,8 @@ import {
   users, type User, type InsertUser,
   conversations, type Conversation, type InsertConversation,
   messages, type Message, type InsertMessage,
-  cannedResponses, type CannedResponse, type InsertCannedResponse
+  cannedResponses, type CannedResponse, type InsertCannedResponse,
+  partners, type Partner, type InsertPartner
 } from "@shared/schema";
 
 // Storage interface
@@ -32,6 +33,12 @@ export interface IStorage {
   getCannedResponse(id: number): Promise<CannedResponse | undefined>;
   getCannedResponsesByAgentId(agentId: number): Promise<CannedResponse[]>;
   createCannedResponse(cannedResponse: InsertCannedResponse): Promise<CannedResponse>;
+  
+  // Partner methods
+  getPartner(id: string): Promise<Partner | undefined>;
+  getPartnerByApiKey(apiKey: string): Promise<Partner | undefined>;
+  createPartner(partner: InsertPartner): Promise<Partner>;
+  getAllPartners(): Promise<Partner[]>;
 }
 
 // In-memory storage implementation
@@ -40,6 +47,7 @@ export class MemStorage implements IStorage {
   private conversations: Map<number, Conversation>;
   private messages: Map<number, Message>;
   private cannedResponses: Map<number, CannedResponse>;
+  private partners: Map<string, Partner>;
   
   private userId: number;
   private conversationId: number;
@@ -51,6 +59,7 @@ export class MemStorage implements IStorage {
     this.conversations = new Map();
     this.messages = new Map();
     this.cannedResponses = new Map();
+    this.partners = new Map();
     
     this.userId = 1;
     this.conversationId = 1;
@@ -216,6 +225,29 @@ export class MemStorage implements IStorage {
     };
     this.cannedResponses.set(id, cannedResponse);
     return cannedResponse;
+  }
+
+  // Partner methods
+  async getPartner(id: string): Promise<Partner | undefined> {
+    return this.partners.get(id);
+  }
+
+  async getPartnerByApiKey(apiKey: string): Promise<Partner | undefined> {
+    return Array.from(this.partners.values()).find(
+      (partner) => partner.apiKey === apiKey
+    );
+  }
+
+  async createPartner(insertPartner: InsertPartner): Promise<Partner> {
+    const partner: Partner = {
+      ...insertPartner
+    };
+    this.partners.set(partner.id, partner);
+    return partner;
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    return Array.from(this.partners.values());
   }
 }
 

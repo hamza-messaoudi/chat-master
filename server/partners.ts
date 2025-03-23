@@ -1,8 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import { PostgresStorage } from './db-storage';
-
-const storage = new PostgresStorage();
+import { storage } from './storage';
 
 // Helper function to generate API keys 
 export function generateApiKey(): string {
@@ -26,8 +24,7 @@ export async function createPartner(name: string, domain: string) {
       id: partnerId,
       name,
       domain,
-      apiKey,
-      createdAt: new Date(),
+      apiKey
     });
     
     return {
