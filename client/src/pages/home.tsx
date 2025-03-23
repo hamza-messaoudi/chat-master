@@ -9,15 +9,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-neutral-light p-4">
-      <div className="w-full max-w-3xl mx-auto text-center mb-8">
+      {/* <div className="w-full max-w-3xl mx-auto text-center mb-8">
         <h1 className="text-4xl font-bold text-primary mb-4">Support Chat Platform</h1>
         <p className="text-lg text-neutral-dark">
           A real-time communication platform for customer support
         </p>
-      </div>
+      </div> */}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-        <Card className="shadow-md">
+        {/* <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Customer Portal</CardTitle>
             <CardDescription>
@@ -40,7 +40,7 @@ export default function Home() {
               Start Chat
             </Button>
           </CardFooter>
-        </Card>
+        </Card> */}
         
         <Card className="shadow-md">
           <CardHeader>
@@ -54,7 +54,7 @@ export default function Home() {
               <span className="material-icons text-6xl text-primary">support_agent</span>
             </div>
             <p className="text-center text-neutral-dark">
-              Access the agent dashboard to handle customer conversations and provide support.
+              Access the agent dashboard to handle customer conversations.
             </p>
           </CardContent>
           <CardFooter className="flex justify-center">
@@ -68,7 +68,7 @@ export default function Home() {
         </Card>
       </div>
       
-      <div className="w-full max-w-3xl mx-auto mt-12 text-center">
+      {/* <div className="w-full max-w-3xl mx-auto mt-12 text-center">
         <h2 className="text-2xl font-bold mb-4">Partner Integration</h2>
         <p className="mb-6">
           Are you a business looking to integrate our support chat into your website?
@@ -79,7 +79,7 @@ export default function Home() {
             <Code className="mr-2 h-4 w-4" /> Partner Documentation <ExternalLink className="ml-2 h-4 w-4" />
           </Button>
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 }

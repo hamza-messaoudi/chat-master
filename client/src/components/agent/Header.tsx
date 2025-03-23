@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import NotificationsMenu from "./NotificationsMenu";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 interface HeaderProps {
   agentName?: string;
@@ -9,6 +11,8 @@ interface HeaderProps {
 }
 
 export default function Header({ agentName = "Agent", isOnline = true, unreadCount = 0, onLogout }: HeaderProps) {
+  const { notifications } = useNotifications();
+  
   return (
     <header className="bg-white shadow-md">
       <div className="flex justify-between items-center px-4 py-2 h-16">
@@ -35,15 +39,18 @@ export default function Header({ agentName = "Agent", isOnline = true, unreadCou
           )}
         </div>
         
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={onLogout}
-          className="ml-2"
-        >
-          <span className="material-icons text-sm mr-1">logout</span>
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <NotificationsMenu />
+          
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={onLogout}
+          >
+            <span className="material-icons text-sm mr-1">logout</span>
+            Logout
+          </Button>
+        </div>
       </div>
     </header>
   );
