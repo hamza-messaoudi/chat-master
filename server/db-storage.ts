@@ -66,8 +66,8 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAllActiveConversations(): Promise<Conversation[]> {
+    // Return all conversations, not just active ones, so agents can see everything
     return await db.select().from(conversations)
-      .where(eq(conversations.status, 'active'))
       .orderBy(desc(conversations.updatedAt));
   }
   

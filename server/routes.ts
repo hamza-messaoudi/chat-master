@@ -189,10 +189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // 2. Agent conversation routes
+  // 2. Agent conversation routes - get all conversations for agent dashboard
   app.get('/api/conversations', async (req: Request, res: Response) => {
     try {
+      // This endpoint returns ALL conversations for agents to see
       const conversations = await storage.getAllActiveConversations();
+      console.log(`Fetched ${conversations.length} conversations for agent dashboard`);
       return res.json(conversations);
     } catch (error) {
       console.error('Error fetching all conversations:', error);
