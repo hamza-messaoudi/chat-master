@@ -172,6 +172,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get('/api/conversations/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const conversation = await storage.getConversation(Number(id));
+      
+      if (!conversation) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+      
+      return res.json(conversation);
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      return res.status(500).json({ error: 'Failed to fetch conversation' });
+    }
+  });
+  
   app.patch('/api/conversations/:id/status', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
