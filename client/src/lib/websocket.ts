@@ -21,22 +21,10 @@ class WebSocketClient {
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) return;
 
-    try {
-      // Get the base URL from the current page
-      const baseUrl = window.location.origin;
-      
-      // Create a WebSocket URL with explicit port and path
-      // This avoids conflicts with Vite's HMR WebSocket
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws?clientId=${this.clientId}`;
-      
-      console.log('Connecting to WebSocket at:', wsUrl);
-      this.socket = new WebSocket(wsUrl);
-    } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
-      setTimeout(() => this.connect(), this.reconnectTimeout);
-      return;
-    }
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws?clientId=${this.clientId}`;
+    
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       console.log("WebSocket connection established");
@@ -107,7 +95,7 @@ class WebSocketClient {
   }
 
   isConnected(): boolean {
-    return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
+    return this.socket?.readyState === WebSocket.OPEN;
   }
 }
 
