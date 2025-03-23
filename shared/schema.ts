@@ -35,6 +35,14 @@ export const cannedResponses = pgTable("canned_responses", {
   content: text("content").notNull(),
 });
 
+export const partners = pgTable("partners", {
+  id: text("id").primaryKey(),  // partner-xxxxxxxx format
+  name: text("name").notNull(),
+  domain: text("domain").notNull(),
+  apiKey: text("api_key").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -61,6 +69,13 @@ export const insertCannedResponseSchema = createInsertSchema(cannedResponses).pi
   content: true,
 });
 
+export const insertPartnerSchema = createInsertSchema(partners).pick({
+  id: true,
+  name: true,
+  domain: true,
+  apiKey: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -73,6 +88,9 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type CannedResponse = typeof cannedResponses.$inferSelect;
 export type InsertCannedResponse = z.infer<typeof insertCannedResponseSchema>;
+
+export type Partner = typeof partners.$inferSelect;
+export type InsertPartner = z.infer<typeof insertPartnerSchema>;
 
 // WebSocket message types
 export type WebSocketMessage = {

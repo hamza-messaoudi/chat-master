@@ -5,7 +5,8 @@ import {
   Conversation, InsertConversation, 
   Message, InsertMessage, 
   CannedResponse, InsertCannedResponse,
-  users, conversations, messages, cannedResponses
+  Partner, InsertPartner,
+  users, conversations, messages, cannedResponses, partners
 } from '../shared/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 
@@ -116,5 +117,25 @@ export class PostgresStorage implements IStorage {
   async createCannedResponse(cannedResponse: InsertCannedResponse): Promise<CannedResponse> {
     const result = await db.insert(cannedResponses).values(cannedResponse).returning();
     return result[0];
+  }
+
+  // Partner methods
+  async getPartner(id: string): Promise<Partner | undefined> {
+    const result = await db.select().from(partners).where(eq(partners.id, id));
+    return result[0];
+  }
+
+  async getPartnerByApiKey(apiKey: string): Promise<Partner | undefined> {
+    const result = await db.select().from(partners).where(eq(partners.apiKey, apiKey));
+    return result[0];
+  }
+
+  async createPartner(partner: InsertPartner): Promise<Partner> {
+    const result = await db.insert(partners).values(partner).returning();
+    return result[0];
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    return await db.select().from(partners);
   }
 }
