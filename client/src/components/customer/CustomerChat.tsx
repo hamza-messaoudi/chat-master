@@ -160,8 +160,17 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   
   // Handle ending the chat
   const handleEndChat = async () => {
+    // Only attempt to end chat if we have a valid conversation ID
+    if (!localConversationId) {
+      toast({
+        title: "No active conversation",
+        description: "There is no active conversation to end.",
+      });
+      return;
+    }
+
     try {
-      await fetch(`/api/conversations/${conversationId}/status`, {
+      await fetch(`/api/conversations/${localConversationId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' }),

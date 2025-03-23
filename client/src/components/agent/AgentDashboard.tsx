@@ -23,6 +23,11 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
+  // Fetch all conversations
+  const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({
+    queryKey: ['/api/conversations'],
+  });
+  
   // Set up WebSocket connection
   useEffect(() => {
     const client = new WebSocketClient(`agent-${agentId}`);
@@ -108,11 +113,6 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
       client.disconnect();
     };
   }, [agentId, queryClient, toast, activeConversation, allConversations]);
-  
-  // Fetch all conversations
-  const { data: allConversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({
-    queryKey: ['/api/conversations'],
-  });
   
   // Fetch messages for each conversation to get the last message
   const conversationsWithLastMessage = allConversations?.map(conversation => {
