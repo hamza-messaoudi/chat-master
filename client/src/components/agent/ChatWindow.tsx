@@ -7,6 +7,7 @@ import { Message, Conversation, CannedResponse } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import WebSocketClient from "@/lib/websocket";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 interface ChatWindowProps {
   conversationId: number;
@@ -23,6 +24,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   
   // Fetch conversation details
   const { data: conversation } = useQuery<Conversation>({
@@ -107,11 +109,11 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       
     } catch (error) {
       console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      addNotification(
+        "Error",
+        "Failed to send message. Please try again.",
+        "system"
+      );
     }
   };
   
@@ -179,17 +181,18 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       // Update the conversation in cache
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       
-      toast({
-        title: "Conversation Resolved",
-        description: "The conversation has been marked as resolved.",
-      });
+      addNotification(
+        "Conversation Resolved",
+        "The conversation has been marked as resolved.",
+        "status"
+      );
     } catch (error) {
       console.error("Error resolving conversation:", error);
-      toast({
-        title: "Error",
-        description: "Failed to resolve conversation.",
-        variant: "destructive",
-      });
+      addNotification(
+        "Error",
+        "Failed to resolve conversation.",
+        "system"
+      );
     }
   };
   
