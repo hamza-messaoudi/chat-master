@@ -66,8 +66,8 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAllActiveConversations(): Promise<Conversation[]> {
+    // Return all conversations for now, ordered by most recent first
     return await db.select().from(conversations)
-      .where(eq(conversations.status, 'active'))
       .orderBy(desc(conversations.updatedAt));
   }
   

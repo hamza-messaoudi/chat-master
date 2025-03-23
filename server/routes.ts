@@ -70,14 +70,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Broadcast to all agents if not assigned to anyone
             if (!conversation.agentId || conversation.status === 'waiting') {
               // Send to all agent websockets
-              for (const [id, clientWs] of clients.entries()) {
+              Array.from(clients.entries()).forEach(([id, clientWs]) => {
                 if (id.startsWith('agent-') && clientWs.readyState === WebSocket.OPEN) {
                   clientWs.send(JSON.stringify({
                     type: 'message',
                     payload: newMessage
                   }));
                 }
-              }
+              });
             }
           }
         } else if (data.type === 'typing') {
@@ -208,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Broadcast status change to relevant clients
-      for (const [clientId, ws] of clients.entries()) {
+      Array.from(clients.entries()).forEach(([clientId, ws]) => {
         if ((clientId === conversation.customerId || 
             (clientId.startsWith('agent-') && (clientId === `agent-${conversation.agentId}` || conversation.status === 'waiting'))) && 
             ws.readyState === WebSocket.OPEN) {
@@ -217,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             payload: { conversationId: conversation.id, status: conversation.status }
           }));
         }
-      }
+      });
       
       return res.json(conversation);
     } catch (error) {
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Broadcast assignment to relevant clients
-      for (const [clientId, ws] of clients.entries()) {
+      Array.from(clients.entries()).forEach(([clientId, ws]) => {
         if ((clientId === conversation.customerId || clientId.startsWith('agent-')) && 
             ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -250,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }));
         }
-      }
+      });
       
       return res.json(conversation);
     } catch (error) {
@@ -296,28 +296,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Message not found' });
       }
       
-      // Broadcast read status to sender
-      const conversation = await storage.getConversation(message.conversationId);
-      
-      if (conversation) {
-        // If agent read customer's message, notify customer
-        if (message.isFromAgent === false) {
-          const customerWs = clients.get(conversation.customerId);
-          if (customerWs && customerWs.readyState === WebSocket.OPEN) {
-            customerWs.send(JSON.stringify({
-              type: 'read',
-              payload: { messageId: message.id }
-            }));
-          }
-        } 
-        // If customer read agent's message, notify agent
-        else if (conversation.agentId) {
-          const agentWs = clients.get(`agent-${conversation.agentId}`);
-          if (agentWs && agentWs.readyState === WebSocket.OPEN) {
-            agentWs.send(JSON.stringify({
-              type: 'read',
-              payload: { messageId: message.id }
-            }));
+      // Broadcast read status to sender if conversation exists
+      if (message.conversationId) {
+        const conversation = await storage.getConversation(message.conversationId);
+        
+        if (conversation) {
+          // If agent read customer's message, notify customer
+          if (message.isFromAgent === false) {
+            const customerWs = clients.get(conversation.customerId);
+            if (customerWs && customerWs.readyState === WebSocket.OPEN) {
+              customerWs.send(JSON.stringify({
+                type: 'read',
+                payload: { messageId: message.id }
+              }));
+            }
+          } 
+          // If customer read agent's message, notify agent
+          else if (conversation.agentId) {
+            const agentWs = clients.get(`agent-${conversation.agentId}`);
+            if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+              agentWs.send(JSON.stringify({
+                type: 'read',
+                payload: { messageId: message.id }
+              }));
+            }
           }
         }
       }
