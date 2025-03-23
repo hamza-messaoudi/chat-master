@@ -154,6 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations', async (req: Request, res: Response) => {
     try {
       const conversations = await storage.getAllActiveConversations();
+      console.log('Fetched conversations:', JSON.stringify(conversations));
       return res.json(conversations);
     } catch (error) {
       console.error('Error fetching all conversations:', error);

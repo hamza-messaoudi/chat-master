@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Header from "./Header";
 import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
@@ -93,22 +93,43 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
     queryKey: ['/api/conversations'],
   });
   
-  // Fetch messages for each conversation to get the last message
-  const conversationsWithLastMessage = allConversations?.map(conversation => {
-    const { data: messages } = useQuery<Message[]>({
-      queryKey: [`/api/conversations/${conversation.id}/messages`],
-      enabled: !!conversation.id,
+  // Fetch all messages for all active conversations in a single query
+  const { data: allMessages } = useQuery<Message[]>({
+    queryKey: ['/api/all-messages'],
+    queryFn: async () => {
+      if (!allConversations || allConversations.length === 0) return [];
+      
+      // Fetch messages for each conversation
+      const messagePromises = allConversations.map(conversation => 
+        fetch(`/api/conversations/${conversation.id}/messages`)
+          .then(res => res.json())
+      );
+      
+      // Combine all messages
+      const allMessagesArrays = await Promise.all(messagePromises);
+      return allMessagesArrays.flat();
+    },
+    enabled: !!allConversations && allConversations.length > 0,
+  });
+  
+  // Process conversations with last messages without using hooks in a map function
+  const conversationsWithLastMessage = useMemo(() => {
+    if (!allConversations) return [];
+    
+    return allConversations.map(conversation => {
+      const conversationMessages = allMessages?.filter(m => m.conversationId === conversation.id) || [];
+      const lastMessage = conversationMessages.length > 0 
+        ? conversationMessages[conversationMessages.length - 1] 
+        : undefined;
+      const unreadCount = conversationMessages.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
+      
+      return {
+        ...conversation,
+        lastMessage,
+        unreadCount
+      } as ConversationWithLastMessage;
     });
-    
-    const lastMessage = messages?.length ? messages[messages.length - 1] : undefined;
-    const unreadCount = messages?.filter(msg => !msg.readStatus && !msg.isFromAgent).length || 0;
-    
-    return {
-      ...conversation,
-      lastMessage,
-      unreadCount
-    } as ConversationWithLastMessage;
-  }) || [];
+  }, [allConversations, allMessages]);
   
   // Handle selecting a conversation
   const handleSelectConversation = async (conversationId: number) => {
