@@ -32,8 +32,9 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isGeneratingLlmResponse, setIsGeneratingLlmResponse] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
-  const [isAutomationActive, setIsAutomationActive] = useState(false);
+  const [isAutomationActive, setIsAutomationActive] = useState(true);
   const [automationDelay, setAutomationDelay] = useState(60); // seconds
+  const [automationCountdown, setAutomationCountdown] = useState<number | null>(null);
   const [newPromptTitle, setNewPromptTitle] = useState("");
   const [newPromptContent, setNewPromptContent] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
@@ -312,6 +313,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   // Handle automation response when customer is inactive
   useEffect(() => {
     let automationTimer: NodeJS.Timeout | null = null;
+    let countdownInterval: NodeJS.Timeout | null = null;
     
     // Only set up automation if it's active and we have customer messages
     if (isAutomationActive && messages && messages.length > 0) {
@@ -320,8 +322,26 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       
       // Only respond to customer messages automatically
       if (!lastMessage.isFromAgent) {
+        // Set initial countdown
+        setAutomationCountdown(automationDelay);
+        
+        // Setup countdown timer
+        countdownInterval = setInterval(() => {
+          setAutomationCountdown((prev) => {
+            if (prev === null || prev <= 1) {
+              if (countdownInterval) clearInterval(countdownInterval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
         // Start timer for automated response
         automationTimer = setTimeout(() => {
+          // Clear countdown 
+          setAutomationCountdown(null);
+          if (countdownInterval) clearInterval(countdownInterval);
+          
           // Find an appropriate LLM prompt to use (we'll use the first available one)
           if (llmPrompts && llmPrompts.length > 0) {
             handleSelectLlmPrompt(llmPrompts[0]);
@@ -333,12 +353,18 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
           }
         }, automationDelay * 1000);
       }
+    } else {
+      // Reset countdown if automation is disabled
+      setAutomationCountdown(null);
     }
     
-    // Clean up timer if component unmounts or dependencies change
+    // Clean up timers if component unmounts or dependencies change
     return () => {
       if (automationTimer) {
         clearTimeout(automationTimer);
+      }
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
       }
     };
   }, [isAutomationActive, messages, automationDelay, llmPrompts]);
@@ -806,9 +832,10 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
             <Button 
               variant="destructive" 
               size="sm" 
-              className="h-8 rounded-full text-xs font-medium"
+              className={`h-8 rounded-full text-xs font-medium ${automationCountdown !== null ? 'animate-pulse' : ''}`}
               onClick={() => {
                 setIsAutomationActive(false);
+                setAutomationCountdown(null);
                 toast({
                   title: "Manual Mode Activated",
                   description: "You have taken control of the conversation.",
@@ -816,7 +843,9 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
               }}
             >
               <span className="material-icons text-sm mr-1">pan_tool</span>
-              Take Over
+              {automationCountdown !== null 
+                ? `Take Over (${automationCountdown}s)` 
+                : "Take Over"}
             </Button>
           )}
           
