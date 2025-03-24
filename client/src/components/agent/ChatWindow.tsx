@@ -3,6 +3,13 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Message, Conversation, CannedResponse, LlmPrompt } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
@@ -25,6 +32,12 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isGeneratingLlmResponse, setIsGeneratingLlmResponse] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [isAutomationActive, setIsAutomationActive] = useState(false);
+  const [automationDelay, setAutomationDelay] = useState(60); // seconds
+  const [newPromptTitle, setNewPromptTitle] = useState("");
+  const [newPromptContent, setNewPromptContent] = useState("");
+  const [newPromptCategory, setNewPromptCategory] = useState("general");
+  const [showNewPromptForm, setShowNewPromptForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -231,6 +244,104 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
     generateLlmResponse.mutate({ customPrompt });
     setCustomPrompt("");
   };
+  
+  // Save a new LLM prompt template
+  const createLlmPrompt = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/llm-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId,
+          title: newPromptTitle,
+          prompt: newPromptContent,
+          category: newPromptCategory
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create new LLM prompt template');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Reset form fields
+      setNewPromptTitle("");
+      setNewPromptContent("");
+      setNewPromptCategory("general");
+      setShowNewPromptForm(false);
+      
+      // Invalidate cache to refresh prompts list
+      queryClient.invalidateQueries({ queryKey: [`/api/llm-prompts/${agentId}`] });
+      
+      toast({
+        title: "Prompt Template Saved",
+        description: "Your new prompt template has been saved successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving prompt template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save prompt template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle saving a new prompt template
+  const handleSavePrompt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPromptTitle.trim() || !newPromptContent.trim()) return;
+    
+    createLlmPrompt.mutate();
+  };
+  
+  // Toggle automation mode
+  const toggleAutomation = () => {
+    setIsAutomationActive(!isAutomationActive);
+    toast({
+      title: isAutomationActive ? "Automation Disabled" : "Automation Enabled",
+      description: isAutomationActive 
+        ? "Automated responses have been turned off." 
+        : `Automated responses will be sent after ${automationDelay} seconds of customer inactivity.`,
+    });
+  };
+  
+  // Handle automation response when customer is inactive
+  useEffect(() => {
+    let automationTimer: NodeJS.Timeout | null = null;
+    
+    // Only set up automation if it's active and we have customer messages
+    if (isAutomationActive && messages && messages.length > 0) {
+      // Get last message
+      const lastMessage = messages[messages.length - 1];
+      
+      // Only respond to customer messages automatically
+      if (!lastMessage.isFromAgent) {
+        // Start timer for automated response
+        automationTimer = setTimeout(() => {
+          // Find an appropriate LLM prompt to use (we'll use the first available one)
+          if (llmPrompts && llmPrompts.length > 0) {
+            handleSelectLlmPrompt(llmPrompts[0]);
+          } else {
+            // Use a default prompt if no templates are available
+            generateLlmResponse.mutate({ 
+              customPrompt: "Please provide a helpful response to the customer's inquiry." 
+            });
+          }
+        }, automationDelay * 1000);
+      }
+    }
+    
+    // Clean up timer if component unmounts or dependencies change
+    return () => {
+      if (automationTimer) {
+        clearTimeout(automationTimer);
+      }
+    };
+  }, [isAutomationActive, messages, automationDelay, llmPrompts]);
   
   // Handle marking a conversation as resolved
   const handleResolveConversation = async () => {
@@ -458,44 +569,160 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
         )}
       </div>
       
-      {/* Response tools and input */}
-      <div className="bg-white border-t border-neutral-medium p-2 sm:p-3">
-        <div className="flex items-center gap-2">
-          {/* Canned responses dropdown */}
+      {/* Automation Control Bar */}
+      <div className="bg-gray-100 border-t border-neutral-medium p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Switch 
+              checked={isAutomationActive}
+              onCheckedChange={toggleAutomation}
+              id="automation-toggle"
+            />
+            <Label 
+              htmlFor="automation-toggle" 
+              className={`text-sm font-medium ${isAutomationActive ? 'text-green-600' : 'text-gray-500'}`}
+            >
+              {isAutomationActive ? 'Automation Active' : 'Automation Off'}
+            </Label>
+          </div>
+          
+          {/* Automation Settings */}
           <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                size="icon" 
-                className="h-8 w-8 rounded-full flex-shrink-0"
-                aria-label="Canned Responses"
+                size="sm" 
+                className="flex items-center gap-1 text-xs"
               >
-                <span className="material-icons text-sm">bolt</span>
+                <span className="material-icons text-sm">settings</span>
+                <span>Automation Settings</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 sm:w-80">
-              <div className="max-h-60 overflow-y-auto">
-                {cannedResponses && cannedResponses.length > 0 ? (
-                  cannedResponses.map((response) => (
-                    <div 
-                      key={response.id} 
-                      className="p-2 hover:bg-neutral-light cursor-pointer"
-                      onClick={() => handleSelectCannedResponse(response)}
-                    >
-                      <div className="font-medium">{response.title}</div>
-                      <div className="text-sm text-neutral-dark truncate">{response.content}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-2 text-neutral-dark">
-                    No canned responses available. Create some for quick replies.
+            <PopoverContent className="w-80">
+              <div className="space-y-4 p-2">
+                <h3 className="font-medium">Automation Settings</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="response-delay">Response Delay (seconds)</Label>
+                  <div className="flex items-center gap-2">
+                    <Slider 
+                      id="response-delay"
+                      min={5}
+                      max={120} 
+                      step={5}
+                      value={[automationDelay]} 
+                      onValueChange={(value) => setAutomationDelay(value[0])}
+                      className="flex-grow"
+                    />
+                    <span className="text-sm w-8 text-center">{automationDelay}s</span>
                   </div>
-                )}
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Current Templates</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-xs h-6"
+                      onClick={() => setShowNewPromptForm(!showNewPromptForm)}
+                    >
+                      {showNewPromptForm ? 'Cancel' : '+ New Template'}
+                    </Button>
+                  </div>
+                  
+                  {showNewPromptForm ? (
+                    <form onSubmit={handleSavePrompt} className="space-y-3 border rounded-md p-2 bg-gray-50">
+                      <div className="space-y-1">
+                        <Label htmlFor="prompt-title" className="text-xs">Title</Label>
+                        <Input
+                          id="prompt-title"
+                          value={newPromptTitle}
+                          onChange={(e) => setNewPromptTitle(e.target.value)}
+                          placeholder="E.g., Standard Greeting"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label htmlFor="prompt-category" className="text-xs">Category</Label>
+                        <Select 
+                          value={newPromptCategory} 
+                          onValueChange={setNewPromptCategory}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="greeting">Greeting</SelectItem>
+                            <SelectItem value="troubleshooting">Troubleshooting</SelectItem>
+                            <SelectItem value="billing">Billing</SelectItem>
+                            <SelectItem value="product">Product Info</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label htmlFor="prompt-content" className="text-xs">Prompt Template</Label>
+                        <Textarea
+                          id="prompt-content"
+                          value={newPromptContent}
+                          onChange={(e) => setNewPromptContent(e.target.value)}
+                          placeholder="Instructions for the AI to generate a response..."
+                          className="min-h-[80px] text-sm"
+                        />
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        size="sm" 
+                        className="w-full"
+                        disabled={!newPromptTitle.trim() || !newPromptContent.trim() || createLlmPrompt.isPending}
+                      >
+                        {createLlmPrompt.isPending ? (
+                          <div className="flex items-center gap-2">
+                            <span className="material-icons animate-spin text-xs">refresh</span>
+                            <span>Saving...</span>
+                          </div>
+                        ) : "Save Template"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto space-y-1">
+                      {llmPrompts && llmPrompts.length > 0 ? (
+                        llmPrompts.map((prompt) => (
+                          <div 
+                            key={prompt.id} 
+                            className="text-sm border rounded-md p-2 flex justify-between items-center"
+                          >
+                            <div>
+                              <div className="font-medium">{prompt.title}</div>
+                              <div className="text-xs text-gray-500">{prompt.category}</div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">{prompt.category}</Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">
+                          No templates available. Create one to get started.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </PopoverContent>
           </Popover>
-          
-          {/* LLM responses dropdown */}
+        </div>
+      </div>
+      
+      {/* Response tools and input */}
+      <div className="bg-white border-t border-neutral-medium p-2 sm:p-3">
+        <div className="flex items-center gap-2">
+          {/* AI responses button */}
           <Popover>
             <PopoverTrigger asChild>
               <Button 
@@ -573,6 +800,25 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
               </Tabs>
             </PopoverContent>
           </Popover>
+          
+          {/* Manual Override Button */}
+          {isAutomationActive && (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="h-8 rounded-full text-xs font-medium"
+              onClick={() => {
+                setIsAutomationActive(false);
+                toast({
+                  title: "Manual Mode Activated",
+                  description: "You have taken control of the conversation.",
+                });
+              }}
+            >
+              <span className="material-icons text-sm mr-1">pan_tool</span>
+              Take Over
+            </Button>
+          )}
           
           {/* Message input and send button */}
           <div className="flex-1 flex items-center gap-2 bg-neutral-50 rounded-full border border-neutral-medium overflow-hidden shadow-sm">
