@@ -179,18 +179,26 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   // Generate LLM response
   const generateLlmResponse = useMutation({
     mutationFn: async (data: { promptId?: number; customPrompt?: string }) => {
-      const response = await apiRequest<{ response: string }>('/api/llm', {
+      const payload = {
+        conversationId,
+        ...(data.promptId && { promptId: data.promptId }),
+        ...(data.customPrompt && { customPrompt: data.customPrompt }),
+      };
+      
+      const response = await fetch('/api/llm/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId,
-          ...(data.promptId && { promptId: data.promptId }),
-          ...(data.customPrompt && { customPrompt: data.customPrompt }),
-        }),
+        body: JSON.stringify(payload),
       });
-      return response;
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate LLM response');
+      }
+      
+      const responseData = await response.json();
+      return responseData as { response: string };
     },
-    onSuccess: (data) => {
+    onSuccess: (data: { response: string }) => {
       setNewMessage(data.response);
       setIsGeneratingLlmResponse(false);
       toast({
