@@ -8,9 +8,11 @@ import {
   insertMessageSchema, 
   insertCannedResponseSchema,
   insertPartnerSchema,
+  insertLlmPromptSchema,
   type WebSocketMessage
 } from "@shared/schema";
 import { partnerAuthMiddleware } from "./partners";
+import { handleLlmRequest } from "./llm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -450,6 +452,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'Failed to fetch messages' });
     }
   });
+  
+  // 6. LLM prompt routes
+  app.get('/api/llm-prompts/:agentId', async (req: Request, res: Response) => {
+    try {
+      const { agentId } = req.params;
+      const prompts = await storage.getLlmPromptsByAgentId(Number(agentId));
+      return res.json(prompts);
+    } catch (error) {
+      console.error('Error fetching LLM prompts:', error);
+      return res.status(500).json({ error: 'Failed to fetch LLM prompts' });
+    }
+  });
+  
+  app.get('/api/llm-prompts/category/:category', async (req: Request, res: Response) => {
+    try {
+      const { category } = req.params;
+      const prompts = await storage.getLlmPromptsByCategory(category);
+      return res.json(prompts);
+    } catch (error) {
+      console.error('Error fetching LLM prompts by category:', error);
+      return res.status(500).json({ error: 'Failed to fetch LLM prompts' });
+    }
+  });
+  
+  app.post('/api/llm-prompts', async (req: Request, res: Response) => {
+    try {
+      const validateData = insertLlmPromptSchema.safeParse(req.body);
+      
+      if (!validateData.success) {
+        return res.status(400).json({ error: validateData.error });
+      }
+      
+      const llmPrompt = await storage.createLlmPrompt(validateData.data);
+      return res.status(201).json(llmPrompt);
+    } catch (error) {
+      console.error('Error creating LLM prompt:', error);
+      return res.status(500).json({ error: 'Failed to create LLM prompt' });
+    }
+  });
+  
+  // 7. LLM generation route
+  app.post('/api/llm/generate', handleLlmRequest);
   
   return httpServer;
 }
