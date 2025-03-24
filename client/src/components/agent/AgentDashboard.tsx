@@ -82,22 +82,8 @@ export default function AgentDashboard({ agentId, onLogout }: AgentDashboardProp
         );
       },
       onConnectionChange: (isConnected) => {
+        // Only update connection state without showing notifications
         setIsConnected(isConnected);
-        if (!isConnected) {
-          addNotification(
-            "Connection Lost",
-            "Reconnecting to server...",
-            'system',
-            { isConnected }
-          );
-        } else if (isConnected) {
-          addNotification(
-            "Connected",
-            "Successfully connected to server",
-            'system',
-            { isConnected }
-          );
-        }
       }
     });
     
