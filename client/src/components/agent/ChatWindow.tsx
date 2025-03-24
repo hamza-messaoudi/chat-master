@@ -595,278 +595,312 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
         )}
       </div>
       
-      {/* Automation Control Bar */}
-      <div className="bg-gray-100 border-t border-neutral-medium p-2">
-        <div className="flex items-center justify-between">
+      {/* Unified Action Bar with Input Field */}
+      <div className="bg-white border-t border-neutral-medium">
+        {/* Automation Control Bar */}
+        <div className="flex items-center justify-between p-2 bg-gray-50 border-b border-neutral-light">
           <div className="flex items-center gap-2">
-            <Switch 
-              checked={isAutomationActive}
-              onCheckedChange={toggleAutomation}
-              id="automation-toggle"
-            />
-            <Label 
-              htmlFor="automation-toggle" 
-              className={`text-sm font-medium ${isAutomationActive ? 'text-green-600' : 'text-gray-500'}`}
-            >
-              {isAutomationActive ? 'Automation Active' : 'Automation Off'}
-            </Label>
+            <div className="flex">
+              <Switch 
+                checked={isAutomationActive}
+                onCheckedChange={toggleAutomation}
+                id="automation-toggle"
+                className="mr-1.5"
+              />
+              <Label 
+                htmlFor="automation-toggle" 
+                className={`text-xs sm:text-sm font-medium hidden sm:block ${isAutomationActive ? 'text-green-600' : 'text-gray-500'}`}
+              >
+                {isAutomationActive ? 'Auto' : 'Off'}
+              </Label>
+            </div>
+            
+            {/* Countdown display */}
+            {automationCountdown !== null && (
+              <Badge 
+                variant="outline" 
+                className="h-6 text-xs bg-gray-100 flex items-center gap-1 animate-pulse text-primary"
+              >
+                <span className="material-icons text-xs">timer</span>
+                <span>{automationCountdown}s</span>
+              </Badge>
+            )}
+            
+            {/* Manual Override Button - Compact for mobile */}
+            {isAutomationActive && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-7 py-0 px-2 rounded-full text-xs font-medium hidden sm:flex items-center"
+                onClick={() => {
+                  setIsAutomationActive(false);
+                  setAutomationCountdown(null);
+                  toast({
+                    title: "Manual Mode Activated",
+                    description: "You have taken control of the conversation.",
+                  });
+                }}
+              >
+                <span className="material-icons text-xs mr-1">pan_tool</span>
+                Take Over
+              </Button>
+            )}
+            
+            {/* Mobile Take Over Button (Icon only) */}
+            {isAutomationActive && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-7 w-7 p-0 rounded-full flex sm:hidden items-center justify-center"
+                onClick={() => {
+                  setIsAutomationActive(false);
+                  setAutomationCountdown(null);
+                  toast({
+                    title: "Manual Mode Activated",
+                    description: "You have taken control of the conversation.",
+                  });
+                }}
+              >
+                <span className="material-icons text-xs">pan_tool</span>
+              </Button>
+            )}
           </div>
           
-          {/* Automation Settings */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-1 text-xs"
-              >
-                <span className="material-icons text-sm">settings</span>
-                <span>Automation Settings</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4 p-2">
-                <h3 className="font-medium">Automation Settings</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="response-delay">Response Delay (seconds)</Label>
-                  <div className="flex items-center gap-2">
-                    <Slider 
-                      id="response-delay"
-                      min={5}
-                      max={120} 
-                      step={5}
-                      value={[automationDelay]} 
-                      onValueChange={(value) => setAutomationDelay(value[0])}
-                      className="flex-grow"
-                    />
-                    <span className="text-sm w-8 text-center">{automationDelay}s</span>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label>Current Templates</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-xs h-6"
-                      onClick={() => setShowNewPromptForm(!showNewPromptForm)}
-                    >
-                      {showNewPromptForm ? 'Cancel' : '+ New Template'}
-                    </Button>
-                  </div>
+          <div className="flex items-center gap-1.5">
+            {/* AI response popover (compact) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 p-0 rounded-full flex-shrink-0"
+                  aria-label="AI Responses"
+                >
+                  <span className="material-icons text-sm">smart_toy</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 sm:w-80">
+                <Tabs defaultValue="templates">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
+                    <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+                  </TabsList>
                   
-                  {showNewPromptForm ? (
-                    <form onSubmit={handleSavePrompt} className="space-y-3 border rounded-md p-2 bg-gray-50">
-                      <div className="space-y-1">
-                        <Label htmlFor="prompt-title" className="text-xs">Title</Label>
-                        <Input
-                          id="prompt-title"
-                          value={newPromptTitle}
-                          onChange={(e) => setNewPromptTitle(e.target.value)}
-                          placeholder="E.g., Standard Greeting"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <Label htmlFor="prompt-category" className="text-xs">Category</Label>
-                        <Select 
-                          value={newPromptCategory} 
-                          onValueChange={setNewPromptCategory}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="general">General</SelectItem>
-                            <SelectItem value="greeting">Greeting</SelectItem>
-                            <SelectItem value="troubleshooting">Troubleshooting</SelectItem>
-                            <SelectItem value="billing">Billing</SelectItem>
-                            <SelectItem value="product">Product Info</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <Label htmlFor="prompt-content" className="text-xs">Prompt Template</Label>
-                        <Textarea
-                          id="prompt-content"
-                          value={newPromptContent}
-                          onChange={(e) => setNewPromptContent(e.target.value)}
-                          placeholder="Instructions for the AI to generate a response..."
-                          className="min-h-[80px] text-sm"
-                        />
-                      </div>
-                      
-                      <Button 
-                        type="submit" 
-                        size="sm" 
-                        className="w-full"
-                        disabled={!newPromptTitle.trim() || !newPromptContent.trim() || createLlmPrompt.isPending}
-                      >
-                        {createLlmPrompt.isPending ? (
-                          <div className="flex items-center gap-2">
-                            <span className="material-icons animate-spin text-xs">refresh</span>
-                            <span>Saving...</span>
+                  <TabsContent value="templates" className="mt-2">
+                    <div className="max-h-60 overflow-y-auto">
+                      {isGeneratingLlmResponse && (
+                        <div className="p-4 flex justify-center">
+                          <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
                           </div>
-                        ) : "Save Template"}
-                      </Button>
-                    </form>
-                  ) : (
-                    <div className="max-h-40 overflow-y-auto space-y-1">
-                      {llmPrompts && llmPrompts.length > 0 ? (
+                        </div>
+                      )}
+                      
+                      {!isGeneratingLlmResponse && llmPrompts && llmPrompts.length > 0 ? (
                         llmPrompts.map((prompt) => (
                           <div 
                             key={prompt.id} 
-                            className="text-sm border rounded-md p-2 flex justify-between items-center"
+                            className="p-2 hover:bg-neutral-light cursor-pointer"
+                            onClick={() => handleSelectLlmPrompt(prompt)}
                           >
-                            <div>
-                              <div className="font-medium">{prompt.title}</div>
-                              <div className="text-xs text-gray-500">{prompt.category}</div>
-                            </div>
-                            <Badge variant="outline" className="text-xs">{prompt.category}</Badge>
+                            <div className="font-medium">{prompt.title}</div>
+                            <div className="text-sm text-neutral-dark truncate">{prompt.prompt}</div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-sm text-gray-500 italic">
-                          No templates available. Create one to get started.
-                        </div>
+                        !isGeneratingLlmResponse && (
+                          <div className="p-2 text-neutral-dark">
+                            No AI templates available. Create some for intelligent responses.
+                          </div>
+                        )
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-      
-      {/* Response tools and input */}
-      <div className="bg-white border-t border-neutral-medium p-2 sm:p-3">
-        <div className="flex items-center gap-2">
-          {/* AI responses button */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-8 w-8 rounded-full flex-shrink-0"
-                aria-label="AI Responses"
-              >
-                <span className="material-icons text-sm">smart_toy</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 sm:w-80">
-              <Tabs defaultValue="templates">
-                <TabsList className="w-full">
-                  <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
-                  <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="templates" className="mt-2">
-                  <div className="max-h-60 overflow-y-auto">
-                    {isGeneratingLlmResponse && (
-                      <div className="p-4 flex justify-center">
-                        <div className="typing-indicator">
-                          <span></span>
-                          <span></span>
-                          <span></span>
+                  </TabsContent>
+                  
+                  <TabsContent value="custom" className="mt-2">
+                    <div className="p-2">
+                      <div className="mb-2 text-sm font-medium">Create a custom AI prompt</div>
+                      <Textarea
+                        placeholder="E.g., Generate a response that explains our refund policy in simple terms..."
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        className="min-h-[100px] mb-2"
+                      />
+                      <Button 
+                        className="w-full" 
+                        onClick={handleSubmitCustomPrompt}
+                        disabled={isGeneratingLlmResponse || !customPrompt.trim()}
+                      >
+                        {isGeneratingLlmResponse ? (
+                          <div className="flex items-center gap-2">
+                            <span className="material-icons animate-spin text-xs">refresh</span>
+                            <span>Generating...</span>
+                          </div>
+                        ) : "Generate Response"}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Automation Settings Popover (compact) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 p-0 rounded-full"
+                  aria-label="Automation Settings"
+                >
+                  <span className="material-icons text-sm">settings</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4 p-2">
+                  <h3 className="font-medium">Automation Settings</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="response-delay">Response Delay (seconds)</Label>
+                    <div className="flex items-center gap-2">
+                      <Slider 
+                        id="response-delay"
+                        min={5}
+                        max={120} 
+                        step={5}
+                        value={[automationDelay]} 
+                        onValueChange={(value) => setAutomationDelay(value[0])}
+                        className="flex-grow"
+                      />
+                      <span className="text-sm w-8 text-center">{automationDelay}s</span>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>Prompt Templates</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-6"
+                        onClick={() => setShowNewPromptForm(!showNewPromptForm)}
+                      >
+                        {showNewPromptForm ? 'Cancel' : '+ New'}
+                      </Button>
+                    </div>
+                    
+                    {showNewPromptForm ? (
+                      <form onSubmit={handleSavePrompt} className="space-y-3 border rounded-md p-2 bg-gray-50">
+                        <div className="space-y-1">
+                          <Label htmlFor="prompt-title" className="text-xs">Title</Label>
+                          <Input
+                            id="prompt-title"
+                            value={newPromptTitle}
+                            onChange={(e) => setNewPromptTitle(e.target.value)}
+                            placeholder="E.g., Standard Greeting"
+                            className="h-8 text-sm"
+                          />
                         </div>
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor="prompt-category" className="text-xs">Category</Label>
+                          <Select 
+                            value={newPromptCategory} 
+                            onValueChange={setNewPromptCategory}
+                          >
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="greeting">Greeting</SelectItem>
+                              <SelectItem value="troubleshooting">Troubleshooting</SelectItem>
+                              <SelectItem value="billing">Billing</SelectItem>
+                              <SelectItem value="product">Product Info</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor="prompt-content" className="text-xs">Prompt Template</Label>
+                          <Textarea
+                            id="prompt-content"
+                            value={newPromptContent}
+                            onChange={(e) => setNewPromptContent(e.target.value)}
+                            placeholder="Instructions for the AI to generate a response..."
+                            className="min-h-[80px] text-sm"
+                          />
+                        </div>
+                        
+                        <Button 
+                          type="submit" 
+                          size="sm" 
+                          className="w-full"
+                          disabled={!newPromptTitle.trim() || !newPromptContent.trim() || createLlmPrompt.isPending}
+                        >
+                          {createLlmPrompt.isPending ? (
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons animate-spin text-xs">refresh</span>
+                              <span>Saving...</span>
+                            </div>
+                          ) : "Save Template"}
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {llmPrompts && llmPrompts.length > 0 ? (
+                          llmPrompts.map((prompt) => (
+                            <div 
+                              key={prompt.id} 
+                              className="text-sm border rounded-md p-2 flex justify-between items-center"
+                              onClick={() => handleSelectLlmPrompt(prompt)}
+                            >
+                              <div>
+                                <div className="font-medium">{prompt.title}</div>
+                                <div className="text-xs text-gray-500">{prompt.category}</div>
+                              </div>
+                              <Badge variant="outline" className="text-xs">{prompt.category}</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500 italic">
+                            No templates available. Create one to get started.
+                          </div>
+                        )}
                       </div>
                     )}
-                    
-                    {!isGeneratingLlmResponse && llmPrompts && llmPrompts.length > 0 ? (
-                      llmPrompts.map((prompt) => (
-                        <div 
-                          key={prompt.id} 
-                          className="p-2 hover:bg-neutral-light cursor-pointer"
-                          onClick={() => handleSelectLlmPrompt(prompt)}
-                        >
-                          <div className="font-medium">{prompt.title}</div>
-                          <div className="text-sm text-neutral-dark truncate">{prompt.prompt}</div>
-                        </div>
-                      ))
-                    ) : (
-                      !isGeneratingLlmResponse && (
-                        <div className="p-2 text-neutral-dark">
-                          No AI templates available. Create some for intelligent responses.
-                        </div>
-                      )
-                    )}
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="custom" className="mt-2">
-                  <div className="p-2">
-                    <div className="mb-2 text-sm font-medium">Create a custom AI prompt</div>
-                    <Textarea
-                      placeholder="E.g., Generate a response that explains our refund policy in simple terms..."
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      className="min-h-[100px] mb-2"
-                    />
-                    <Button 
-                      className="w-full" 
-                      onClick={handleSubmitCustomPrompt}
-                      disabled={isGeneratingLlmResponse || !customPrompt.trim()}
-                    >
-                      {isGeneratingLlmResponse ? (
-                        <div className="flex items-center gap-2">
-                          <span className="material-icons animate-spin text-sm">refresh</span>
-                          <span>Generating...</span>
-                        </div>
-                      ) : "Generate Response"}
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </PopoverContent>
-          </Popover>
-          
-          {/* Manual Override Button */}
-          {isAutomationActive && (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              className={`h-8 rounded-full text-xs font-medium ${automationCountdown !== null ? 'animate-pulse' : ''}`}
-              onClick={() => {
-                setIsAutomationActive(false);
-                setAutomationCountdown(null);
-                toast({
-                  title: "Manual Mode Activated",
-                  description: "You have taken control of the conversation.",
-                });
-              }}
-            >
-              <span className="material-icons text-sm mr-1">pan_tool</span>
-              {automationCountdown !== null 
-                ? `Take Over (${automationCountdown}s)` 
-                : "Take Over"}
-            </Button>
-          )}
-          
-          {/* Message input and send button */}
-          <div className="flex-1 flex items-center gap-2 bg-neutral-50 rounded-full border border-neutral-medium overflow-hidden shadow-sm">
-            <Textarea
-              placeholder="Type your message..."
-              value={newMessage}
-              onChange={handleMessageChange}
-              onKeyDown={handleKeyPress}
-              className="flex-grow py-2 px-4 resize-none text-sm min-h-0 border-none focus-visible:ring-0 bg-transparent"
-              rows={1}
-            />
-            <Button 
-              className="rounded-full h-8 w-8 p-0 flex items-center justify-center bg-primary text-white hover:bg-primary/90 mr-1"
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              size="icon"
-            >
-              <span className="material-icons text-sm">send</span>
-            </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        
+        {/* Clean Message Input Field */}
+        <div className="p-2 sm:p-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 bg-neutral-50 rounded-full border border-neutral-medium overflow-hidden shadow-sm">
+              <Textarea
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={handleMessageChange}
+                onKeyDown={handleKeyPress}
+                className="flex-grow py-2 px-4 resize-none text-sm min-h-0 border-none focus-visible:ring-0 bg-transparent"
+                rows={1}
+              />
+              <Button 
+                className="rounded-full h-8 w-8 p-0 flex items-center justify-center bg-primary text-white hover:bg-primary/90 mr-1"
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                size="icon"
+              >
+                <span className="material-icons text-sm">send</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
