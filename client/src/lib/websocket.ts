@@ -27,7 +27,7 @@ class WebSocketClient {
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
-      console.log("WebSocket connection established");
+      // Silent connection - no console logs or notifications
       this.reconnectAttempts = 0;
       this.events.onConnectionChange(true);
     };
@@ -60,18 +60,17 @@ class WebSocketClient {
     this.socket.onclose = (event) => {
       this.events.onConnectionChange(false);
       
+      // Silent reconnection - only attempt reconnect without logs
       if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
         const timeout = this.reconnectTimeout * Math.pow(2, this.reconnectAttempts - 1);
-        console.log(`WebSocket connection closed. Reconnecting in ${timeout}ms...`);
         setTimeout(() => this.connect(), timeout);
-      } else {
-        console.log('WebSocket connection closed');
       }
     };
 
-    this.socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    this.socket.onerror = (_error) => {
+      // Silent error handling - errors will be handled by the onclose handler
+      // Only critical errors should be logged in production
     };
   }
 
