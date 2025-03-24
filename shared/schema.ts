@@ -35,6 +35,15 @@ export const cannedResponses = pgTable("canned_responses", {
   content: text("content").notNull(),
 });
 
+export const llmPrompts = pgTable("llm_prompts", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").references(() => users.id),
+  title: text("title").notNull(),
+  prompt: text("prompt").notNull(),
+  category: text("category").default("general"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const partners = pgTable("partners", {
   id: text("id").primaryKey(),  // partner-xxxxxxxx format
   name: text("name").notNull(),
@@ -76,6 +85,13 @@ export const insertPartnerSchema = createInsertSchema(partners).pick({
   apiKey: true,
 });
 
+export const insertLlmPromptSchema = createInsertSchema(llmPrompts).pick({
+  agentId: true,
+  title: true,
+  prompt: true,
+  category: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -91,6 +107,9 @@ export type InsertCannedResponse = z.infer<typeof insertCannedResponseSchema>;
 
 export type Partner = typeof partners.$inferSelect;
 export type InsertPartner = z.infer<typeof insertPartnerSchema>;
+
+export type LlmPrompt = typeof llmPrompts.$inferSelect;
+export type InsertLlmPrompt = z.infer<typeof insertLlmPromptSchema>;
 
 // WebSocket message types
 export type WebSocketMessage = {

@@ -3,7 +3,8 @@ import {
   conversations, type Conversation, type InsertConversation,
   messages, type Message, type InsertMessage,
   cannedResponses, type CannedResponse, type InsertCannedResponse,
-  partners, type Partner, type InsertPartner
+  partners, type Partner, type InsertPartner,
+  llmPrompts, type LlmPrompt, type InsertLlmPrompt
 } from "@shared/schema";
 
 // Storage interface
@@ -33,6 +34,12 @@ export interface IStorage {
   getCannedResponse(id: number): Promise<CannedResponse | undefined>;
   getCannedResponsesByAgentId(agentId: number): Promise<CannedResponse[]>;
   createCannedResponse(cannedResponse: InsertCannedResponse): Promise<CannedResponse>;
+  
+  // LLM prompts methods
+  getLlmPrompt(id: number): Promise<LlmPrompt | undefined>;
+  getLlmPromptsByAgentId(agentId: number): Promise<LlmPrompt[]>;
+  getLlmPromptsByCategory(category: string): Promise<LlmPrompt[]>;
+  createLlmPrompt(llmPrompt: InsertLlmPrompt): Promise<LlmPrompt>;
   
   // Partner methods
   getPartner(id: string): Promise<Partner | undefined>;
