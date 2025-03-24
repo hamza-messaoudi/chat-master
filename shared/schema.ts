@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,9 +9,17 @@ export const users = pgTable("users", {
   isAgent: boolean("is_agent").default(false),
 });
 
+export const customers = pgTable("customers", {
+  id: text("id").primaryKey(), // customer-xxxxxxxx format
+  name: text("name"),
+  email: text("email"),
+  birthdate: date("birthdate"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  customerId: text("customer_id").notNull(),
+  customerId: text("customer_id").notNull().references(() => customers.id),
   agentId: integer("agent_id").references(() => users.id),
   status: text("status").notNull().default("waiting"), // waiting, active, resolved
   createdAt: timestamp("created_at").defaultNow(),
@@ -59,6 +67,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isAgent: true,
 });
 
+export const insertCustomerSchema = createInsertSchema(customers).pick({
+  id: true,
+  name: true,
+  email: true,
+  birthdate: true,
+});
+
 export const insertConversationSchema = createInsertSchema(conversations).pick({
   customerId: true,
   agentId: true,
@@ -96,6 +111,9 @@ export const insertLlmPromptSchema = createInsertSchema(llmPrompts).pick({
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
@@ -113,6 +131,21 @@ export type InsertLlmPrompt = z.infer<typeof insertLlmPromptSchema>;
 
 // WebSocket message types
 export type WebSocketMessage = {
-  type: 'message' | 'status' | 'typing' | 'read';
+  type: 'message' | 'status' | 'typing' | 'read' | 'flashback';
   payload: any;
 };
+
+// Flashback profile types
+export interface EventDate {
+  month: string;
+  year: number;
+}
+
+export interface FlashbackProfile {
+  flashBack: {
+    firstEventDate: EventDate;
+    firstEventTrait: string;
+    secondEventDate: EventDate;
+    secondEventTrait: string;
+  };
+}

@@ -2,12 +2,13 @@ import { db } from './db';
 import { IStorage } from './storage';
 import { 
   User, InsertUser, 
+  Customer, InsertCustomer,
   Conversation, InsertConversation, 
   Message, InsertMessage, 
   CannedResponse, InsertCannedResponse,
   Partner, InsertPartner,
   LlmPrompt, InsertLlmPrompt,
-  users, conversations, messages, cannedResponses, partners, llmPrompts
+  users, customers, conversations, messages, cannedResponses, partners, llmPrompts
 } from '../shared/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 
@@ -25,6 +26,30 @@ export class PostgresStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const result = await db.insert(users).values(user).returning();
+    return result[0];
+  }
+  
+  // Customer methods
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.id, id));
+    return result[0];
+  }
+  
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.email, email));
+    return result[0];
+  }
+  
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const result = await db.insert(customers).values(customer).returning();
+    return result[0];
+  }
+  
+  async updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const result = await db.update(customers)
+      .set(data)
+      .where(eq(customers.id, id))
+      .returning();
     return result[0];
   }
   

@@ -1,0 +1,166 @@
+/**
+ * Flashback Generator Service
+ *
+ * This service contains functions to generate flashback profiles
+ * based on a person's birth date.
+ */
+
+import { FlashbackProfile, EventDate } from '@shared/schema';
+
+interface PersonalIndicators {
+  personal_year: number;
+  personal_month: number;
+  personal_day: number;
+}
+
+function formatEventDate(eventDate: [string, number]): EventDate {
+  return { month: eventDate[0], year: eventDate[1] };
+}
+
+function reduceNumber(num: number): number {
+  while (num > 9) {
+    num = num
+      .toString()
+      .split("")
+      .reduce((sum, digit) => sum + parseInt(digit), 0);
+  }
+  return num;
+}
+
+function calculatePersonalIndicators(dobStr: string, currentDateStr: string): PersonalIndicators {
+  const dob = new Date(dobStr);
+  const currentDate = new Date(currentDateStr);
+
+  // Calculate personal year
+  const personalYear = reduceNumber(dob.getDate() + (dob.getMonth() + 1) + currentDate.getFullYear());
+
+  // Calculate personal month
+  const personalMonth = reduceNumber((currentDate.getMonth() + 1) + personalYear);
+
+  // Calculate personal day
+  const personalDay = reduceNumber(currentDate.getDate() + personalMonth);
+
+  return {
+    personal_year: personalYear,
+    personal_month: personalMonth,
+    personal_day: personalDay,
+  };
+}
+
+function getPersonalData(birthdate: string): [number, number] {
+  const currentDatetime = new Date();
+  const currentDate = currentDatetime.toISOString().split("T")[0];
+  
+  const indicators = calculatePersonalIndicators(birthdate, currentDate);
+  return [indicators.personal_year, indicators.personal_month];
+}
+
+function getMonthNameAndYear(monthNumber: number): [string, number] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // Calculate the target month and year
+  let targetMonth = monthNumber;
+  let yearOffset = 0;
+  
+  // Adjust for negative months
+  if (targetMonth <= 0) {
+    targetMonth += 12;
+    yearOffset -= 1;
+  }
+  
+  const targetYear = currentYear + yearOffset;
+  
+  // Get month name
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const monthName = monthNames[targetMonth - 1];
+  
+  return [monthName, targetYear];
+}
+
+function getFlashBacksEventDates(
+  currentPersonalYear: number,
+  currentPersonalMonth: number
+): [[string, number], [string, number], string | null, string | null] {
+  const monthTraits: Record<number, string> = {
+    8: "Un mois de fatigue et de dépression psychologique, attention (burn out) avec affaiblissement physique, dépenses financières élevées, épuisement émotionnel et mental.",
+    4: "Paperasse administrative qui doit être réglée, surtout que vous avez ressenti une forme de routine hyper-lourde.",
+    2: "C'est une phase de doute personnelle jusqu'au point où vous avez perdu confiance en vous, et vous vous êtes sentis perdus dans votre vie sentimentale.",
+  };
+  
+  const currentMonth = new Date().getMonth() + 1;
+  let previous1EventDate: number | null = null;
+  let previous2EventDate: number | null = null;
+  let previous1EventTrait: string | null = null;
+  let previous2EventTrait: string | null = null;
+  
+  if (currentPersonalMonth > 8) {
+    previous1EventDate = currentMonth - (currentPersonalMonth - 8);
+    previous1EventTrait = monthTraits[8];
+    previous2EventDate = currentMonth - (currentPersonalMonth - 4);
+    previous2EventTrait = monthTraits[4];
+  } else if (currentPersonalMonth === 8) {
+    previous1EventDate = currentMonth - (currentPersonalMonth - 4);
+    previous1EventTrait = monthTraits[4];
+    previous2EventDate = currentMonth - (currentPersonalMonth - 2);
+    previous2EventTrait = monthTraits[2];
+  } else if (currentPersonalMonth > 4) {
+    previous1EventDate = currentMonth - (currentPersonalMonth - 4);
+    previous1EventTrait = monthTraits[4];
+    previous2EventDate = currentMonth - (currentPersonalMonth - 2);
+    previous2EventTrait = monthTraits[2];
+  } else if (currentPersonalMonth === 4) {
+    previous1EventDate = currentMonth - (currentPersonalMonth - 2);
+    previous1EventTrait = monthTraits[2];
+    previous2EventDate = currentMonth - (currentPersonalMonth + 1);
+    previous2EventTrait = monthTraits[8];
+  } else if (currentPersonalMonth === 3) {
+    previous1EventDate = currentMonth - (currentPersonalMonth - 2);
+    previous1EventTrait = monthTraits[2];
+    previous2EventDate = currentMonth - (currentPersonalMonth + 1);
+    previous2EventTrait = monthTraits[8];
+  } else if (currentPersonalMonth === 2) {
+    previous1EventDate = currentMonth - (currentPersonalMonth + 1);
+    previous1EventTrait = monthTraits[8];
+    previous2EventDate = currentMonth - (currentPersonalMonth + 5);
+    previous2EventTrait = monthTraits[4];
+  } else if (currentPersonalMonth === 1) {
+    previous1EventDate = currentMonth - (currentPersonalMonth + 1);
+    previous1EventTrait = monthTraits[8];
+    previous2EventDate = currentMonth - (currentPersonalMonth + 5);
+    previous2EventTrait = monthTraits[4];
+  }
+  
+  return [
+    getMonthNameAndYear(previous1EventDate!),
+    getMonthNameAndYear(previous2EventDate!),
+    previous1EventTrait,
+    previous2EventTrait
+  ];
+}
+
+export function generateFlashbackProfile(birthdate: string): FlashbackProfile {
+  // Get personal year and month
+  const [personalYear, personalMonth] = getPersonalData(birthdate);
+
+  // Get flashback event dates and traits
+  const [
+    previous1EventDate,
+    previous2EventDate,
+    previous1EventTrait,
+    previous2EventTrait,
+  ] = getFlashBacksEventDates(personalYear, personalMonth);
+
+  // Construct and return the profile
+  return {
+    flashBack: {
+      firstEventDate: formatEventDate(previous1EventDate),
+      firstEventTrait: previous1EventTrait ? previous1EventTrait.trim() : "",
+      secondEventDate: formatEventDate(previous2EventDate),
+      secondEventTrait: previous2EventTrait ? previous2EventTrait.trim() : "",
+    }
+  };
+}

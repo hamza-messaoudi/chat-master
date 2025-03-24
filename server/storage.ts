@@ -1,5 +1,6 @@
 import { 
   users, type User, type InsertUser,
+  customers, type Customer, type InsertCustomer,
   conversations, type Conversation, type InsertConversation,
   messages, type Message, type InsertMessage,
   cannedResponses, type CannedResponse, type InsertCannedResponse,
@@ -13,6 +14,12 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Customer methods
+  getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerByEmail(email: string): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined>;
   
   // Conversation methods
   getConversation(id: number): Promise<Conversation | undefined>;
@@ -51,6 +58,7 @@ export interface IStorage {
 // In-memory storage implementation
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
+  private customers: Map<string, Customer>;
   private conversations: Map<number, Conversation>;
   private messages: Map<number, Message>;
   private cannedResponses: Map<number, CannedResponse>;
@@ -65,6 +73,7 @@ export class MemStorage implements IStorage {
   
   constructor() {
     this.users = new Map();
+    this.customers = new Map();
     this.conversations = new Map();
     this.messages = new Map();
     this.cannedResponses = new Map();
@@ -106,6 +115,42 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, user);
     return user;
+  }
+  
+  // Customer methods
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    return this.customers.get(id);
+  }
+  
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    return Array.from(this.customers.values()).find(
+      (customer) => customer.email === email,
+    );
+  }
+  
+  async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const now = new Date();
+    const customer: Customer = {
+      id: insertCustomer.id,
+      name: insertCustomer.name || null,
+      email: insertCustomer.email || null,
+      birthdate: insertCustomer.birthdate || null,
+      createdAt: now
+    };
+    this.customers.set(customer.id, customer);
+    return customer;
+  }
+  
+  async updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const customer = this.customers.get(id);
+    if (!customer) return undefined;
+    
+    const updatedCustomer: Customer = {
+      ...customer,
+      ...data
+    };
+    this.customers.set(id, updatedCustomer);
+    return updatedCustomer;
   }
   
   // Conversation methods
