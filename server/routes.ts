@@ -9,10 +9,12 @@ import {
   insertCannedResponseSchema,
   insertPartnerSchema,
   insertLlmPromptSchema,
+  insertCustomerSchema,
   type WebSocketMessage
 } from "@shared/schema";
 import { partnerAuthMiddleware } from "./partners";
 import { handleLlmRequest } from "./llm";
+import { generateFlashbackProfile } from "./flashback";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
