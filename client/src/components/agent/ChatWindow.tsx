@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { Tab, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Message, Conversation, CannedResponse, LlmPrompt } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import WebSocketClient from "@/lib/websocket";
@@ -23,6 +23,8 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [isTyping, setIsTyping] = useState(false);
   const [customerIsTyping, setCustomerIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isGeneratingLlmResponse, setIsGeneratingLlmResponse] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -46,6 +48,11 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   // Fetch canned responses
   const { data: cannedResponses } = useQuery<CannedResponse[]>({
     queryKey: [`/api/canned-responses/${agentId}`],
+  });
+  
+  // Fetch LLM prompts
+  const { data: llmPrompts } = useQuery<LlmPrompt[]>({
+    queryKey: [`/api/llm-prompts/${agentId}`],
   });
   
   // Scroll to bottom when messages change and mark messages as read
@@ -167,6 +174,54 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   // Handle selecting a canned response
   const handleSelectCannedResponse = (response: CannedResponse) => {
     setNewMessage(response.content);
+  };
+  
+  // Generate LLM response
+  const generateLlmResponse = useMutation({
+    mutationFn: async (data: { promptId?: number; customPrompt?: string }) => {
+      const response = await apiRequest<{ response: string }>('/api/llm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId,
+          ...(data.promptId && { promptId: data.promptId }),
+          ...(data.customPrompt && { customPrompt: data.customPrompt }),
+        }),
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      setNewMessage(data.response);
+      setIsGeneratingLlmResponse(false);
+      toast({
+        title: "Response Generated",
+        description: "AI-generated response has been added to your input",
+      });
+    },
+    onError: (error) => {
+      console.error('Error generating LLM response:', error);
+      setIsGeneratingLlmResponse(false);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI response. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle selecting an LLM prompt
+  const handleSelectLlmPrompt = (prompt: LlmPrompt) => {
+    setIsGeneratingLlmResponse(true);
+    generateLlmResponse.mutate({ promptId: prompt.id });
+  };
+  
+  // Handle submitting a custom prompt
+  const handleSubmitCustomPrompt = () => {
+    if (!customPrompt.trim()) return;
+    
+    setIsGeneratingLlmResponse(true);
+    generateLlmResponse.mutate({ customPrompt });
+    setCustomPrompt("");
   };
   
   // Handle marking a conversation as resolved
@@ -429,6 +484,85 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                   </div>
                 )}
               </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* LLM responses dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-8 w-8 rounded-full flex-shrink-0"
+                aria-label="AI Responses"
+              >
+                <span className="material-icons text-sm">smart_toy</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 sm:w-80">
+              <Tabs defaultValue="templates">
+                <TabsList className="w-full">
+                  <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
+                  <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="templates" className="mt-2">
+                  <div className="max-h-60 overflow-y-auto">
+                    {isGeneratingLlmResponse && (
+                      <div className="p-4 flex justify-center">
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!isGeneratingLlmResponse && llmPrompts && llmPrompts.length > 0 ? (
+                      llmPrompts.map((prompt) => (
+                        <div 
+                          key={prompt.id} 
+                          className="p-2 hover:bg-neutral-light cursor-pointer"
+                          onClick={() => handleSelectLlmPrompt(prompt)}
+                        >
+                          <div className="font-medium">{prompt.title}</div>
+                          <div className="text-sm text-neutral-dark truncate">{prompt.prompt}</div>
+                        </div>
+                      ))
+                    ) : (
+                      !isGeneratingLlmResponse && (
+                        <div className="p-2 text-neutral-dark">
+                          No AI templates available. Create some for intelligent responses.
+                        </div>
+                      )
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="custom" className="mt-2">
+                  <div className="p-2">
+                    <div className="mb-2 text-sm font-medium">Create a custom AI prompt</div>
+                    <Textarea
+                      placeholder="E.g., Generate a response that explains our refund policy in simple terms..."
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      className="min-h-[100px] mb-2"
+                    />
+                    <Button 
+                      className="w-full" 
+                      onClick={handleSubmitCustomPrompt}
+                      disabled={isGeneratingLlmResponse || !customPrompt.trim()}
+                    >
+                      {isGeneratingLlmResponse ? (
+                        <div className="flex items-center gap-2">
+                          <span className="material-icons animate-spin text-sm">refresh</span>
+                          <span>Generating...</span>
+                        </div>
+                      ) : "Generate Response"}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </PopoverContent>
           </Popover>
           

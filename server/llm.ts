@@ -24,10 +24,10 @@ export async function generateLlmResponse(
     const recentMessages = messages.slice(-10).map(msg => ({
       role: msg.isFromAgent ? "assistant" : "user",
       content: msg.content
-    }));
+    } as OpenAI.ChatCompletionMessageParam));
 
     // Create a system message with instructions and context
-    const systemMessage = {
+    const systemMessage: OpenAI.ChatCompletionSystemMessageParam = {
       role: "system",
       content: `You are a helpful customer support agent. 
       The customer ID is ${conversation.customerId}. 
@@ -39,7 +39,7 @@ export async function generateLlmResponse(
     };
 
     // Combine all messages for the API request
-    const apiMessages = [
+    const apiMessages: OpenAI.ChatCompletionMessageParam[] = [
       systemMessage,
       ...recentMessages
     ];
