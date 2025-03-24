@@ -54,24 +54,28 @@ export class MemStorage implements IStorage {
   private conversations: Map<number, Conversation>;
   private messages: Map<number, Message>;
   private cannedResponses: Map<number, CannedResponse>;
+  private llmPrompts: Map<number, LlmPrompt>;
   private partners: Map<string, Partner>;
   
   private userId: number;
   private conversationId: number;
   private messageId: number;
   private cannedResponseId: number;
+  private llmPromptId: number;
   
   constructor() {
     this.users = new Map();
     this.conversations = new Map();
     this.messages = new Map();
     this.cannedResponses = new Map();
+    this.llmPrompts = new Map();
     this.partners = new Map();
     
     this.userId = 1;
     this.conversationId = 1;
     this.messageId = 1;
     this.cannedResponseId = 1;
+    this.llmPromptId = 1;
     
     // Add a default agent user
     this.createUser({
@@ -273,6 +277,38 @@ export class MemStorage implements IStorage {
 
   async getAllPartners(): Promise<Partner[]> {
     return Array.from(this.partners.values());
+  }
+  
+  // LLM prompts methods
+  async getLlmPrompt(id: number): Promise<LlmPrompt | undefined> {
+    return this.llmPrompts.get(id);
+  }
+  
+  async getLlmPromptsByAgentId(agentId: number): Promise<LlmPrompt[]> {
+    return Array.from(this.llmPrompts.values()).filter(
+      (prompt) => prompt.agentId === agentId,
+    );
+  }
+  
+  async getLlmPromptsByCategory(category: string): Promise<LlmPrompt[]> {
+    return Array.from(this.llmPrompts.values()).filter(
+      (prompt) => prompt.category === category,
+    );
+  }
+  
+  async createLlmPrompt(insertLlmPrompt: InsertLlmPrompt): Promise<LlmPrompt> {
+    const id = this.llmPromptId++;
+    const now = new Date();
+    const llmPrompt: LlmPrompt = {
+      id,
+      title: insertLlmPrompt.title,
+      prompt: insertLlmPrompt.prompt,
+      category: insertLlmPrompt.category || 'general',
+      agentId: insertLlmPrompt.agentId || null,
+      createdAt: now
+    };
+    this.llmPrompts.set(id, llmPrompt);
+    return llmPrompt;
   }
 }
 

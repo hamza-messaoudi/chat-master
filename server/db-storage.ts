@@ -6,7 +6,8 @@ import {
   Message, InsertMessage, 
   CannedResponse, InsertCannedResponse,
   Partner, InsertPartner,
-  users, conversations, messages, cannedResponses, partners
+  LlmPrompt, InsertLlmPrompt,
+  users, conversations, messages, cannedResponses, partners, llmPrompts
 } from '../shared/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 
@@ -137,5 +138,24 @@ export class PostgresStorage implements IStorage {
 
   async getAllPartners(): Promise<Partner[]> {
     return await db.select().from(partners);
+  }
+  
+  // LLM prompts methods
+  async getLlmPrompt(id: number): Promise<LlmPrompt | undefined> {
+    const result = await db.select().from(llmPrompts).where(eq(llmPrompts.id, id));
+    return result[0];
+  }
+  
+  async getLlmPromptsByAgentId(agentId: number): Promise<LlmPrompt[]> {
+    return await db.select().from(llmPrompts).where(eq(llmPrompts.agentId, agentId));
+  }
+  
+  async getLlmPromptsByCategory(category: string): Promise<LlmPrompt[]> {
+    return await db.select().from(llmPrompts).where(eq(llmPrompts.category, category));
+  }
+  
+  async createLlmPrompt(llmPrompt: InsertLlmPrompt): Promise<LlmPrompt> {
+    const result = await db.insert(llmPrompts).values(llmPrompt).returning();
+    return result[0];
   }
 }
