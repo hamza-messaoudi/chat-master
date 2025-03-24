@@ -599,39 +599,13 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       <div className="bg-white border-t border-neutral-medium">
         {/* Automation Control Bar */}
         <div className="flex items-center justify-between p-2 bg-gray-50 border-b border-neutral-light">
-          <div className="flex items-center gap-2">
-            <div className="flex">
-              <Switch 
-                checked={isAutomationActive}
-                onCheckedChange={toggleAutomation}
-                id="automation-toggle"
-                className="mr-1.5"
-              />
-              <Label 
-                htmlFor="automation-toggle" 
-                className={`text-xs sm:text-sm font-medium hidden sm:block ${isAutomationActive ? 'text-green-600' : 'text-gray-500'}`}
-              >
-                {isAutomationActive ? 'Auto' : 'Off'}
-              </Label>
-            </div>
-            
-            {/* Countdown display */}
-            {automationCountdown !== null && (
-              <Badge 
-                variant="outline" 
-                className="h-6 text-xs bg-gray-100 flex items-center gap-1 animate-pulse text-primary"
-              >
-                <span className="material-icons text-xs">timer</span>
-                <span>{automationCountdown}s</span>
-              </Badge>
-            )}
-            
-            {/* Manual Override Button - Compact for mobile */}
-            {isAutomationActive && (
+          <div className="flex items-center gap-2">          
+            {/* Combined Take Over Button with Counter */}
+            {isAutomationActive && automationCountdown !== null ? (
               <Button 
                 variant="destructive" 
                 size="sm" 
-                className="h-7 py-0 px-2 rounded-full text-xs font-medium hidden sm:flex items-center"
+                className="h-7 rounded-full text-xs font-medium animate-pulse flex items-center"
                 onClick={() => {
                   setIsAutomationActive(false);
                   setAutomationCountdown(null);
@@ -642,28 +616,25 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                 }}
               >
                 <span className="material-icons text-xs mr-1">pan_tool</span>
-                Take Over
+                <span className="mr-1">Take Over</span>
+                <Badge 
+                  variant="outline" 
+                  className="h-5 ml-1 text-xs bg-white/20 flex items-center gap-0.5 border-white/30"
+                >
+                  <span className="material-icons text-xs">timer</span>
+                  <span>{automationCountdown}s</span>
+                </Badge>
               </Button>
-            )}
-            
-            {/* Mobile Take Over Button (Icon only) */}
-            {isAutomationActive && (
+            ) : isAutomationActive ? (
               <Button 
-                variant="destructive" 
+                variant="outline" 
                 size="sm" 
-                className="h-7 w-7 p-0 rounded-full flex sm:hidden items-center justify-center"
-                onClick={() => {
-                  setIsAutomationActive(false);
-                  setAutomationCountdown(null);
-                  toast({
-                    title: "Manual Mode Activated",
-                    description: "You have taken control of the conversation.",
-                  });
-                }}
+                className="h-7 rounded-md text-xs font-medium flex items-center border-green-200 bg-green-50 text-green-700"
               >
-                <span className="material-icons text-xs">pan_tool</span>
+                <span className="material-icons text-xs mr-1">auto_awesome</span>
+                <span className="mr-1">Auto Mode</span>
               </Button>
-            )}
+            ) : null}
           </div>
           
           <div className="flex items-center gap-1.5">
@@ -750,17 +721,32 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
-                  variant="ghost" 
+                  variant={isAutomationActive ? "outline" : "ghost"}
                   size="sm" 
-                  className="h-7 w-7 p-0 rounded-full"
+                  className={`h-7 w-7 p-0 rounded-full ${isAutomationActive ? "border-green-500 bg-green-50" : ""}`}
                   aria-label="Automation Settings"
                 >
-                  <span className="material-icons text-sm">settings</span>
+                  <span className={`material-icons text-sm ${isAutomationActive ? "text-green-600" : ""}`}>settings</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80">
                 <div className="space-y-4 p-2">
-                  <h3 className="font-medium">Automation Settings</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Automation Settings</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch 
+                        checked={isAutomationActive}
+                        onCheckedChange={toggleAutomation}
+                        id="automation-toggle"
+                      />
+                      <Label 
+                        htmlFor="automation-toggle" 
+                        className={`text-xs font-medium ${isAutomationActive ? 'text-green-600' : 'text-gray-500'}`}
+                      >
+                        {isAutomationActive ? 'Enabled' : 'Disabled'}
+                      </Label>
+                    </div>
+                  </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="response-delay">Response Delay (seconds)</Label>
