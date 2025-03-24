@@ -1,11 +1,17 @@
 import { storage } from './storage';
 import { Request, Response } from 'express';
 import { Message, Conversation } from '@shared/schema';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /**
- * Generate a response using the connected LLM
- * This is a simple placeholder for actual LLM integration
- * In a real implementation, this would connect to a service like OpenAI or another LLM
+ * Generate a response using the OpenAI API
+ * This function connects to the OpenAI API and generates a response
+ * based on the conversation context and prompt
  */
 export async function generateLlmResponse(
   prompt: string, 
@@ -13,22 +19,47 @@ export async function generateLlmResponse(
   messages: Message[], 
   promptTemplate?: string
 ): Promise<string> {
-  // In a real implementation, we would:
-  // 1. Format the conversation context and recent messages
-  // 2. Apply the prompt template if provided
-  // 3. Send the formatted prompt to the LLM API
-  // 4. Return the response
-  
-  // This is a simple implementation that simulates an LLM response
-  const messageCount = messages.length;
-  const lastMessages = messages.slice(-3).map(m => m.content).join(' ');
-  const customerName = conversation.customerId.slice(0, 6);
-  
-  // Simple response generation based on the conversation context
-  return `I understand your concern about ${lastMessages.slice(0, 30)}... 
-As a support agent, I'd like to help resolve this issue for you, ${customerName}.
-${prompt}
-What specific details can you provide to help me better address your needs?`;
+  try {
+    // Format the conversation history for context
+    const recentMessages = messages.slice(-10).map(msg => ({
+      role: msg.isFromAgent ? "assistant" : "user",
+      content: msg.content
+    }));
+
+    // Create a system message with instructions and context
+    const systemMessage = {
+      role: "system",
+      content: `You are a helpful customer support agent. 
+      The customer ID is ${conversation.customerId}. 
+      The conversation status is ${conversation.status}.
+      
+      ${promptTemplate ? `Use the following template for your response: ${promptTemplate}` : ''}
+      
+      ${prompt}`
+    };
+
+    // Combine all messages for the API request
+    const apiMessages = [
+      systemMessage,
+      ...recentMessages
+    ];
+
+    // Call the OpenAI API
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: apiMessages,
+      temperature: 0.7,
+      max_tokens: 500
+    });
+
+    // Return the generated response
+    return response.choices[0]?.message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.";
+  } catch (error) {
+    console.error('Error calling OpenAI API:', error);
+    
+    // Return a fallback response if the API call fails
+    return "I'm currently experiencing technical difficulties. Please try again shortly or use one of our pre-written responses.";
+  }
 }
 
 /**

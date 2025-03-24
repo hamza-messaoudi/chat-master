@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { Message, Conversation, CannedResponse } from "@shared/schema";
+import { Tab, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Message, Conversation, CannedResponse, LlmPrompt } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import WebSocketClient from "@/lib/websocket";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "../../contexts/NotificationContext";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ChatWindowProps {
   conversationId: number;
