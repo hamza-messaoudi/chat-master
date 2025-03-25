@@ -88,7 +88,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
 }).extend({
   // Define metadata as a Record type to accept objects
-  metadata: z.record(z.any()).or(z.string()).nullish()
+  metadata: z.record(z.any()).nullish(),
+  readStatus: z.boolean().optional()
 });
 
 export const insertCannedResponseSchema = createInsertSchema(cannedResponses).pick({
@@ -121,11 +122,17 @@ export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
+// MessageMetadata type for consistent typing
+export interface MessageMetadata extends Record<string, any> {
+  commandType?: string;
+  value?: any;
+}
+
 export type Message = typeof messages.$inferSelect & {
-  metadata?: Record<string, any> | null; // The parsed metadata object
+  metadata?: MessageMetadata | null; // The parsed metadata object
 };
 export type InsertMessage = z.infer<typeof insertMessageSchema> & {
-  metadata?: Record<string, any> | null; // Allow passing metadata object
+  metadata?: MessageMetadata | null; // Allow passing metadata object
 };
 
 export type CannedResponse = typeof cannedResponses.$inferSelect;

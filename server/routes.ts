@@ -288,12 +288,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/messages', async (req: Request, res: Response) => {
     try {
-      const validateData = insertMessageSchema.safeParse(req.body);
+      // Create a properly shaped message object with metadata properly formatted
+      const messageData = {
+        ...req.body,
+        // Ensure metadata is in the correct format
+        metadata: req.body.metadata ? 
+          (typeof req.body.metadata === 'string' ? 
+            JSON.parse(req.body.metadata) : 
+            req.body.metadata
+          ) : null
+      };
+      
+      // Validate the data
+      const validateData = insertMessageSchema.safeParse(messageData);
       
       if (!validateData.success) {
         return res.status(400).json({ error: validateData.error });
       }
       
+      // Store the message
       const message = await storage.createMessage(validateData.data);
       return res.status(201).json(message);
     } catch (error) {
@@ -446,17 +459,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/partner/messages', partnerAuthMiddleware, async (req: Request, res: Response) => {
     try {
-      const { conversationId, content, senderId, isFromAgent } = req.body;
+      const { conversationId, content, senderId, isFromAgent, metadata } = req.body;
       
       if (!conversationId || !content || !senderId) {
         return res.status(400).json({ error: 'Conversation ID, content and sender ID are required' });
       }
       
+      // Process metadata if provided
+      const processedMetadata = metadata ? 
+        (typeof metadata === 'string' ? JSON.parse(metadata) : metadata) : 
+        null;
+      
       const message = await storage.createMessage({
         conversationId,
         senderId,
         isFromAgent: isFromAgent || false,
-        content
+        content,
+        metadata: processedMetadata
       });
       
       return res.status(201).json(message);

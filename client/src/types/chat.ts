@@ -5,13 +5,18 @@ export type ConversationWithLastMessage = Conversation & {
   unreadCount: number;
 };
 
+export type MessageMetadata = Record<string, any> & {
+  commandType?: string;
+  value?: any;
+};
+
 export type ClientMessage = {
   id: number;
   content: string;
   isFromAgent: boolean;
   timestamp: Date;
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
-  metadata?: Record<string, any>; // For additional data like command types
+  metadata?: MessageMetadata | null; // For additional data like command types
 };
 
 export type TypingIndicator = {
