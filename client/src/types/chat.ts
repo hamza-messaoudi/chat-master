@@ -1,4 +1,4 @@
-import { Conversation, Message, CannedResponse } from "@shared/schema";
+import { Conversation, Message, CannedResponse, FlashbackProfile } from "@shared/schema";
 
 export type ConversationWithLastMessage = Conversation & {
   lastMessage?: Message;
@@ -24,4 +24,5 @@ export interface WebSocketEvents {
   onStatusChange: (data: { conversationId: number; status: string; agentId?: number }) => void;
   onReadReceipt: (data: { messageId: number }) => void;
   onConnectionChange: (isConnected: boolean) => void;
+  onFlashback: (data: FlashbackProfile) => void;
 }

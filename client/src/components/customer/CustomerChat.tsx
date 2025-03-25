@@ -31,7 +31,7 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   });
   
   // Fetch customer flashback data
-  const { data: customer } = useQuery({
+  const { data: customer } = useQuery<{ birthdate?: string | Date }>({
     queryKey: [`/api/customers/${customerId}`],
   });
 
@@ -214,13 +214,27 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
+  // Toggle flashback view
+  const toggleFlashbackView = () => {
+    setShowFlashback(!showFlashback);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-neutral-light">
       {/* Chat header */}
       <div className="p-4 bg-primary text-white shadow-md flex items-center">
         <span className="material-icons mr-2">support_agent</span>
         <h1 className="text-xl">Support Chat</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center">
+          {flashbackProfile && (
+            <button 
+              onClick={toggleFlashbackView} 
+              className="mr-3 text-xs bg-accent text-white px-2 py-1 rounded-full flex items-center"
+            >
+              <span className="material-icons text-xs mr-1">history</span>
+              Flashback
+            </button>
+          )}
           {isConnected ? (
             <span className="text-xs bg-success text-white px-2 py-1 rounded-full">Connected</span>
           ) : (
@@ -228,6 +242,38 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
           )}
         </div>
       </div>
+      
+      {/* Flashback panel */}
+      {showFlashback && flashbackProfile && (
+        <div className="bg-white p-4 border-b border-neutral-medium">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <span className="material-icons mr-2 text-accent">history</span>
+                Customer Flashback Analysis
+              </CardTitle>
+              <CardDescription>
+                Based on birthday information and numerology patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded p-3">
+                  <h3 className="text-sm font-medium mb-2 text-neutral-dark">First Event: {flashbackProfile.flashBack.firstEventDate.month} {flashbackProfile.flashBack.firstEventDate.year}</h3>
+                  <p className="text-sm">{flashbackProfile.flashBack.firstEventTrait}</p>
+                </div>
+                <div className="border rounded p-3">
+                  <h3 className="text-sm font-medium mb-2 text-neutral-dark">Second Event: {flashbackProfile.flashBack.secondEventDate.month} {flashbackProfile.flashBack.secondEventDate.year}</h3>
+                  <p className="text-sm">{flashbackProfile.flashBack.secondEventTrait}</p>
+                </div>
+              </div>
+              <div className="mt-3 text-xs text-neutral-dark">
+                This information may help provide more personalized support for the customer.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       {/* Chat messages */}
       <div className="flex-grow p-4 overflow-y-auto custom-scrollbar">

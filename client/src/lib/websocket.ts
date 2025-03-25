@@ -12,6 +12,7 @@ class WebSocketClient {
     onStatusChange: () => {},
     onReadReceipt: () => {},
     onConnectionChange: () => {},
+    onFlashback: () => {},
   };
 
   constructor(clientId: string) {
@@ -48,6 +49,9 @@ class WebSocketClient {
             break;
           case 'read':
             this.events.onReadReceipt(data.payload);
+            break;
+          case 'flashback':
+            this.events.onFlashback(data.payload);
             break;
           default:
             console.warn('Unknown message type:', data.type);

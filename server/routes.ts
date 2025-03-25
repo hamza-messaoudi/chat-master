@@ -562,7 +562,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Customer birthdate not set' });
       }
       
-      const flashbackProfile = generateFlashbackProfile(customer.birthdate.toISOString());
+      // Ensure we have a valid date string
+      const birthdateString = typeof customer.birthdate === 'string' 
+        ? customer.birthdate 
+        : new Date(customer.birthdate).toISOString();
+        
+      const flashbackProfile = generateFlashbackProfile(birthdateString);
       
       // Send profile to customer via WebSocket if they're connected
       const customerWs = clients.get(id);
