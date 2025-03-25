@@ -118,8 +118,25 @@ export class PostgresStorage implements IStorage {
         .where(eq(conversations.id, message.conversationId));
     }
     
-    const result = await db.insert(messages).values(message).returning();
-    return result[0];
+    // If metadata exists but is an object, stringify it for storage
+    const processedMessage = { ...message };
+    if (processedMessage.metadata && typeof processedMessage.metadata === 'object') {
+      processedMessage.metadata = JSON.stringify(processedMessage.metadata);
+    }
+    
+    const result = await db.insert(messages).values(processedMessage).returning();
+    
+    // Parse metadata back to an object if it's a valid JSON string
+    const returnedMessage = result[0];
+    if (returnedMessage.metadata && typeof returnedMessage.metadata === 'string') {
+      try {
+        returnedMessage.metadata = JSON.parse(returnedMessage.metadata);
+      } catch (e) {
+        // If parsing fails, keep it as a string
+      }
+    }
+    
+    return returnedMessage;
   }
 
   async markMessageAsRead(id: number): Promise<Message | undefined> {

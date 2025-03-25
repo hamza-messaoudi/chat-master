@@ -11,6 +11,7 @@ export type ClientMessage = {
   isFromAgent: boolean;
   timestamp: Date;
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+  metadata?: Record<string, any>; // For additional data like command types
 };
 
 export type TypingIndicator = {

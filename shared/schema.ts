@@ -34,6 +34,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
   readStatus: boolean("read_status").default(false),
+  metadata: text("metadata"), // JSON string for storing command metadata
 });
 
 export const cannedResponses = pgTable("canned_responses", {
@@ -85,6 +86,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   senderId: true,
   isFromAgent: true,
   content: true,
+  metadata: true,
 });
 
 export const insertCannedResponseSchema = createInsertSchema(cannedResponses).pick({
