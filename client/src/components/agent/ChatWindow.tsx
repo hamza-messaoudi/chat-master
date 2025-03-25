@@ -39,6 +39,8 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [newPromptContent, setNewPromptContent] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
   const [showNewPromptForm, setShowNewPromptForm] = useState(false);
+  const [flashbackProfile, setFlashbackProfile] = useState<any>(null);
+  const [showFlashback, setShowFlashback] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -53,6 +55,23 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
       return response.json();
     },
   });
+  
+  // Fetch customer flashback data when conversation is loaded
+  useEffect(() => {
+    if (conversation?.customerId) {
+      fetch(`/api/customers/${conversation.customerId}/flashback`)
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to fetch flashback");
+        })
+        .then(data => {
+          setFlashbackProfile(data);
+        })
+        .catch(err => {
+          console.error("Error fetching flashback profile:", err);
+        });
+    }
+  }, [conversation?.customerId]);
   
   // Fetch messages
   const { data: messages, isLoading: isLoadingMessages } = useQuery<Message[]>({
@@ -409,7 +428,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
     if (webSocketClient) {
       const originalEventHandlers = webSocketClient.getEventHandlers();
       
-      // Add typing indicator handler specifically for this chat window
+      // Add handlers specifically for this chat window
       webSocketClient.setEventHandlers({
         ...originalEventHandlers,
         onTyping: (typingData) => {
@@ -427,6 +446,18 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
               }, 5000);
             }
           }
+        },
+        onFlashback: (data) => {
+          // When flashback data is received via WebSocket
+          if (conversation?.customerId && data) {
+            setFlashbackProfile(data);
+            setShowFlashback(true);
+            
+            toast({
+              title: "Flashback Available",
+              description: "Customer personality insights are now available",
+            });
+          }
         }
       });
       
@@ -435,7 +466,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
         webSocketClient.setEventHandlers(originalEventHandlers);
       };
     }
-  }, [webSocketClient, conversationId]);
+  }, [webSocketClient, conversationId, conversation?.customerId]);
   
   // Group messages by date for displaying message groups
   const groupedMessages = messages?.reduce((groups, message) => {
@@ -474,6 +505,17 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                   `Started ${formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}` : 
                   "Loading..."}
               </div>
+              
+              {/* Flashback indicator */}
+              {flashbackProfile && (
+                <div 
+                  className="flex items-center mt-1 text-xs cursor-pointer text-blue-600"
+                  onClick={() => setShowFlashback(!showFlashback)}
+                >
+                  <span className="material-icons text-xs mr-1">history</span>
+                  <span>Personality Flashback</span>
+                </div>
+              )}
             </div>
           </div>
           
