@@ -121,8 +121,12 @@ export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect & {
+  metadata?: Record<string, any> | null; // The parsed metadata object
+};
+export type InsertMessage = z.infer<typeof insertMessageSchema> & {
+  metadata?: Record<string, any> | null; // Allow passing metadata object
+};
 
 export type CannedResponse = typeof cannedResponses.$inferSelect;
 export type InsertCannedResponse = z.infer<typeof insertCannedResponseSchema>;

@@ -13,6 +13,34 @@ import {
 import { eq, and, desc, asc } from 'drizzle-orm';
 
 export class PostgresStorage implements IStorage {
+  /**
+   * Helper method to parse message metadata from string to object
+   */
+  private parseMessageMetadata(message: any): Message {
+    if (message && message.metadata && typeof message.metadata === 'string') {
+      try {
+        const parsed = JSON.parse(message.metadata);
+        return {
+          ...message,
+          metadata: parsed
+        };
+      } catch (e) {
+        // If parsing fails, keep metadata as null
+        return {
+          ...message,
+          metadata: null
+        };
+      }
+    }
+    return message as Message;
+  }
+  
+  /**
+   * Helper method to parse message list metadata from string to object
+   */
+  private parseMessageListMetadata(messages: any[]): Message[] {
+    return messages.map(msg => this.parseMessageMetadata(msg));
+  }
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
@@ -101,17 +129,9 @@ export class PostgresStorage implements IStorage {
   // Message methods
   async getMessage(id: number): Promise<Message | undefined> {
     const result = await db.select().from(messages).where(eq(messages.id, id));
-    const message = result[0];
+    if (!result[0]) return undefined;
     
-    if (message?.metadata && typeof message.metadata === 'string') {
-      try {
-        message.metadata = JSON.parse(message.metadata);
-      } catch (e) {
-        // If parsing fails, keep it as a string
-      }
-    }
-    
-    return message;
+    return this.parseMessageMetadata(result[0]);
   }
 
   async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
@@ -119,18 +139,7 @@ export class PostgresStorage implements IStorage {
       .where(eq(messages.conversationId, conversationId))
       .orderBy(asc(messages.timestamp));
     
-    // Parse metadata for each message
-    for (const message of results) {
-      if (message.metadata && typeof message.metadata === 'string') {
-        try {
-          message.metadata = JSON.parse(message.metadata);
-        } catch (e) {
-          // If parsing fails, keep it as a string
-        }
-      }
-    }
-    
-    return results;
+    return this.parseMessageListMetadata(results);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
@@ -142,24 +151,25 @@ export class PostgresStorage implements IStorage {
     }
     
     // If metadata exists but is an object, stringify it for storage
-    const processedMessage = { ...message };
+    const processedMessage: any = { ...message };
     if (processedMessage.metadata && typeof processedMessage.metadata === 'object') {
       processedMessage.metadata = JSON.stringify(processedMessage.metadata);
     }
     
-    const result = await db.insert(messages).values(processedMessage).returning();
+    // Create a properly typed insert value with only the fields that belong in the database
+    const insertValue = {
+      conversationId: processedMessage.conversationId,
+      senderId: processedMessage.senderId,
+      isFromAgent: processedMessage.isFromAgent,
+      content: processedMessage.content,
+      metadata: processedMessage.metadata,
+      readStatus: processedMessage.readStatus
+    };
     
-    // Parse metadata back to an object if it's a valid JSON string
-    const returnedMessage = result[0];
-    if (returnedMessage.metadata && typeof returnedMessage.metadata === 'string') {
-      try {
-        returnedMessage.metadata = JSON.parse(returnedMessage.metadata);
-      } catch (e) {
-        // If parsing fails, keep it as a string
-      }
-    }
+    const result = await db.insert(messages).values(insertValue).returning();
     
-    return returnedMessage;
+    // Parse and return the message
+    return this.parseMessageMetadata(result[0]);
   }
 
   async markMessageAsRead(id: number): Promise<Message | undefined> {
@@ -168,17 +178,10 @@ export class PostgresStorage implements IStorage {
       .where(eq(messages.id, id))
       .returning();
     
-    // Parse metadata if it exists and is a string
-    const returnedMessage = result[0];
-    if (returnedMessage && returnedMessage.metadata && typeof returnedMessage.metadata === 'string') {
-      try {
-        returnedMessage.metadata = JSON.parse(returnedMessage.metadata);
-      } catch (e) {
-        // If parsing fails, keep it as a string
-      }
-    }
+    if (!result[0]) return undefined;
     
-    return returnedMessage;
+    // Parse and return the message
+    return this.parseMessageMetadata(result[0]);
   }
   
   // Canned responses methods

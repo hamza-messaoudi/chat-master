@@ -332,11 +332,11 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
                   {/* Display metadata if available */}
                   {message.metadata && typeof message.metadata === 'object' && (
                     <div className={`text-xs ${message.isFromAgent ? 'text-neutral-dark/90' : 'text-white/90'} mt-1 border-t ${message.isFromAgent ? 'border-gray-200' : 'border-white/20'} pt-1`}>
-                      {message.metadata.commandType && (
+                      {message.metadata && 'commandType' in message.metadata && (
                         <div className="flex items-center">
                           <span className="material-icons text-xs mr-1">code</span>
                           <span>Command: {message.metadata.commandType}</span>
-                          {message.metadata.value && message.metadata.value !== true && (
+                          {'value' in message.metadata && message.metadata.value && message.metadata.value !== true && (
                             <span className="ml-1">({typeof message.metadata.value === 'string' ? message.metadata.value : JSON.stringify(message.metadata.value)})</span>
                           )}
                         </div>
