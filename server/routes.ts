@@ -134,6 +134,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: validateData.error });
       }
       
+      const { customerId } = validateData.data;
+      
+      // Check if customer exists, create if not
+      const existingCustomer = await storage.getCustomer(customerId);
+      if (!existingCustomer) {
+        console.log(`Customer ${customerId} not found. Creating new customer record.`);
+        await storage.createCustomer({
+          id: customerId,
+          // Only create with ID, other fields can be updated later
+        });
+      }
+      
       const conversation = await storage.createConversation(validateData.data);
       return res.status(201).json(conversation);
     } catch (error) {
@@ -397,6 +409,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!customerId) {
         return res.status(400).json({ error: 'Customer ID is required' });
+      }
+      
+      // Check if customer exists, create if not
+      const existingCustomer = await storage.getCustomer(customerId);
+      if (!existingCustomer) {
+        console.log(`Customer ${customerId} not found. Creating new customer record.`);
+        await storage.createCustomer({
+          id: customerId,
+          // Only create with ID, other fields can be updated later
+        });
       }
       
       const conversation = await storage.createConversation({
