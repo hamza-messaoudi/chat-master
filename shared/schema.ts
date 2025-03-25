@@ -86,7 +86,9 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   senderId: true,
   isFromAgent: true,
   content: true,
-  metadata: true,
+}).extend({
+  // Define metadata as a Record type to accept objects
+  metadata: z.record(z.any()).or(z.string()).nullish()
 });
 
 export const insertCannedResponseSchema = createInsertSchema(cannedResponses).pick({
