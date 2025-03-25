@@ -101,13 +101,36 @@ export class PostgresStorage implements IStorage {
   // Message methods
   async getMessage(id: number): Promise<Message | undefined> {
     const result = await db.select().from(messages).where(eq(messages.id, id));
-    return result[0];
+    const message = result[0];
+    
+    if (message?.metadata && typeof message.metadata === 'string') {
+      try {
+        message.metadata = JSON.parse(message.metadata);
+      } catch (e) {
+        // If parsing fails, keep it as a string
+      }
+    }
+    
+    return message;
   }
 
   async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
-    return await db.select().from(messages)
+    const results = await db.select().from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(asc(messages.timestamp));
+    
+    // Parse metadata for each message
+    for (const message of results) {
+      if (message.metadata && typeof message.metadata === 'string') {
+        try {
+          message.metadata = JSON.parse(message.metadata);
+        } catch (e) {
+          // If parsing fails, keep it as a string
+        }
+      }
+    }
+    
+    return results;
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
@@ -144,7 +167,18 @@ export class PostgresStorage implements IStorage {
       .set({ readStatus: true })
       .where(eq(messages.id, id))
       .returning();
-    return result[0];
+    
+    // Parse metadata if it exists and is a string
+    const returnedMessage = result[0];
+    if (returnedMessage && returnedMessage.metadata && typeof returnedMessage.metadata === 'string') {
+      try {
+        returnedMessage.metadata = JSON.parse(returnedMessage.metadata);
+      } catch (e) {
+        // If parsing fails, keep it as a string
+      }
+    }
+    
+    return returnedMessage;
   }
   
   // Canned responses methods

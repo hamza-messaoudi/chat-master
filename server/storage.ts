@@ -243,7 +243,8 @@ export class MemStorage implements IStorage {
       isFromAgent: insertMessage.isFromAgent,
       content: insertMessage.content,
       timestamp: now,
-      readStatus: false
+      readStatus: false,
+      metadata: insertMessage.metadata || null
     };
     this.messages.set(id, message);
     
