@@ -236,6 +236,24 @@ export class MemStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = this.messageId++;
     const now = new Date();
+    
+    // Process metadata to ensure it's in the right format
+    let processedMetadata: MessageMetadata | null = null;
+    if (insertMessage.metadata) {
+      if (typeof insertMessage.metadata === 'string') {
+        try {
+          processedMetadata = JSON.parse(insertMessage.metadata);
+        } catch (e) {
+          // If parsing fails, keep it as null
+          console.error('Failed to parse metadata string:', e);
+          processedMetadata = null;
+        }
+      } else {
+        // If it's already an object, use it directly
+        processedMetadata = insertMessage.metadata;
+      }
+    }
+    
     const message: Message = {
       id,
       conversationId: insertMessage.conversationId || null,
@@ -244,7 +262,7 @@ export class MemStorage implements IStorage {
       content: insertMessage.content,
       timestamp: now,
       readStatus: false,
-      metadata: insertMessage.metadata || null
+      metadata: processedMetadata
     };
     this.messages.set(id, message);
     
