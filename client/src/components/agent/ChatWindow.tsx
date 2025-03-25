@@ -677,6 +677,22 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                       } max-w-[80%] sm:max-w-xs break-words`}
                     >
                       <p className="text-sm sm:text-base">{message.content}</p>
+                      
+                      {/* Display metadata if available */}
+                      {message.metadata && typeof message.metadata === 'object' && (
+                        <div className={`text-xs ${message.isFromAgent ? 'text-white/90' : 'text-neutral-dark/90'} mt-1 border-t ${message.isFromAgent ? 'border-white/20' : 'border-gray-200'} pt-1`}>
+                          {message.metadata.commandType && (
+                            <div className="flex items-center">
+                              <span className="material-icons text-xs mr-1">code</span>
+                              <span>Command: {message.metadata.commandType}</span>
+                              {message.metadata.value && message.metadata.value !== true && (
+                                <span className="ml-1">({typeof message.metadata.value === 'string' ? message.metadata.value : JSON.stringify(message.metadata.value)})</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       <div className={`text-xs ${message.isFromAgent ? 'text-white opacity-80' : 'text-neutral-dark'} mt-1 text-right`}>
                         {formatTime(message.timestamp)}
                       </div>

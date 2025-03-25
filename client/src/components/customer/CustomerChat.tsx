@@ -102,12 +102,40 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     if (!newMessage.trim() || !webSocketClient) return;
     
     try {
+      // Check for command pattern ($command) to add metadata
+      let metadata = null;
+      const commandRegex = /\$(\w+)(?:\s+(.+))?/;
+      const match = newMessage.match(commandRegex);
+      
+      if (match) {
+        const [fullMatch, command, value] = match;
+        metadata = {
+          commandType: command,
+          value: value || true
+        };
+        
+        // Handle special commands
+        if (command === 'dob' && value) {
+          // For date of birth command, add special formatting
+          try {
+            // Basic validation for date format
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              metadata.value = value;
+            }
+          } catch (e) {
+            console.error("Invalid date format:", e);
+          }
+        }
+      }
+      
       // Send via WebSocket
       webSocketClient.send('message', {
         conversationId,
         content: newMessage,
         senderId: customerId,
-        isFromAgent: false
+        isFromAgent: false,
+        metadata
       });
       
       // Clear input
@@ -300,6 +328,22 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
                   }`}
                 >
                   <p>{message.content}</p>
+                  
+                  {/* Display metadata if available */}
+                  {message.metadata && typeof message.metadata === 'object' && (
+                    <div className={`text-xs ${message.isFromAgent ? 'text-neutral-dark/90' : 'text-white/90'} mt-1 border-t ${message.isFromAgent ? 'border-gray-200' : 'border-white/20'} pt-1`}>
+                      {message.metadata.commandType && (
+                        <div className="flex items-center">
+                          <span className="material-icons text-xs mr-1">code</span>
+                          <span>Command: {message.metadata.commandType}</span>
+                          {message.metadata.value && message.metadata.value !== true && (
+                            <span className="ml-1">({typeof message.metadata.value === 'string' ? message.metadata.value : JSON.stringify(message.metadata.value)})</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className={`text-xs ${message.isFromAgent ? 'text-neutral-dark' : 'text-white'} mt-1 text-right`}>
                     {formatTime(message.timestamp)}
                   </div>
