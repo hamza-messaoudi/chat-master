@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import WebSocketClient from "@/lib/websocket";
-import { Message } from "@shared/schema";
+import { Message, FlashbackProfile } from "@shared/schema";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CustomerChatProps {
   customerId: string;
@@ -18,6 +19,8 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [webSocketClient, setWebSocketClient] = useState<WebSocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [flashbackProfile, setFlashbackProfile] = useState<FlashbackProfile | null>(null);
+  const [showFlashback, setShowFlashback] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -27,6 +30,25 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
     queryKey: [`/api/conversations/${conversationId}/messages`],
   });
   
+  // Fetch customer flashback data
+  const { data: customer } = useQuery({
+    queryKey: [`/api/customers/${customerId}`],
+  });
+
+  // Fetch flashback profile if customer exists and has birthdate
+  useEffect(() => {
+    if (customer && customer.birthdate) {
+      fetch(`/api/customers/${customerId}/flashback`)
+        .then(res => res.json())
+        .then(data => {
+          setFlashbackProfile(data);
+        })
+        .catch(err => {
+          console.error("Error fetching flashback profile:", err);
+        });
+    }
+  }, [customer, customerId]);
+
   // Set up WebSocket connection
   useEffect(() => {
     const client = new WebSocketClient(customerId);
@@ -45,6 +67,15 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
         if (typingIndicator.conversationId === conversationId) {
           setAgentIsTyping(typingIndicator.isTyping);
         }
+      },
+      onFlashback: (data) => {
+        setFlashbackProfile(data);
+        setShowFlashback(true);
+        
+        toast({
+          title: "Flashback Available",
+          description: "We've analyzed your history based on your birthday.",
+        });
       },
       onConnectionChange: (isConnected) => {
         setIsConnected(isConnected);

@@ -497,5 +497,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 7. LLM generation route
   app.post('/api/llm/generate', handleLlmRequest);
   
+  // 8. Customer management routes
+  app.post('/api/customers', async (req: Request, res: Response) => {
+    try {
+      const validateData = insertCustomerSchema.safeParse(req.body);
+      
+      if (!validateData.success) {
+        return res.status(400).json({ error: validateData.error });
+      }
+      
+      const customer = await storage.createCustomer(validateData.data);
+      return res.status(201).json(customer);
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      return res.status(500).json({ error: 'Failed to create customer' });
+    }
+  });
+
+  app.get('/api/customers/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const customer = await storage.getCustomer(id);
+      
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+      
+      return res.json(customer);
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      return res.status(500).json({ error: 'Failed to fetch customer' });
+    }
+  });
+
+  app.patch('/api/customers/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const customer = await storage.updateCustomer(id, updateData);
+      
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+      
+      return res.json(customer);
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      return res.status(500).json({ error: 'Failed to update customer' });
+    }
+  });
+
+  // 9. Flashback profile routes
+  app.get('/api/customers/:id/flashback', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const customer = await storage.getCustomer(id);
+      
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+      
+      if (!customer.birthdate) {
+        return res.status(400).json({ error: 'Customer birthdate not set' });
+      }
+      
+      const flashbackProfile = generateFlashbackProfile(customer.birthdate.toISOString());
+      
+      // Send profile to customer via WebSocket if they're connected
+      const customerWs = clients.get(id);
+      if (customerWs && customerWs.readyState === WebSocket.OPEN) {
+        customerWs.send(JSON.stringify({
+          type: 'flashback',
+          payload: flashbackProfile
+        }));
+      }
+      
+      return res.json(flashbackProfile);
+    } catch (error) {
+      console.error('Error generating flashback profile:', error);
+      return res.status(500).json({ error: 'Failed to generate flashback profile' });
+    }
+  });
+  
   return httpServer;
 }
