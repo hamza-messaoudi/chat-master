@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Message, Conversation, CannedResponse, LlmPrompt } from "@shared/schema";
+import { Message, Conversation, CannedResponse, LlmPrompt, FlashbackProfile } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import WebSocketClient from "@/lib/websocket";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [newPromptContent, setNewPromptContent] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
   const [showNewPromptForm, setShowNewPromptForm] = useState(false);
-  const [flashbackProfile, setFlashbackProfile] = useState<any>(null);
+  const [flashbackProfile, setFlashbackProfile] = useState<FlashbackProfile | null>(null);
   const [showFlashback, setShowFlashback] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -571,6 +571,58 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
           </div>
         </div>
       </div>
+      
+      {/* Flashback Profile Panel */}
+      {showFlashback && flashbackProfile && (
+        <div className="bg-blue-50 border-b border-blue-200 p-3 text-sm">
+          <div className="mb-2 flex justify-between items-center">
+            <div className="font-medium text-blue-800 flex items-center">
+              <span className="material-icons text-sm mr-1">psychology</span>
+              Customer Personality Insights
+            </div>
+            <button 
+              className="text-blue-600 hover:text-blue-800 text-xs"
+              onClick={() => setShowFlashback(false)}
+            >
+              Hide
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {flashbackProfile.flashBack && (
+              <>
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <div className="text-xs text-blue-700 mb-1">First Significant Event</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-blue-900 font-medium">
+                      {flashbackProfile.flashBack.firstEventTrait}
+                    </div>
+                    <div className="text-xs text-neutral-dark">
+                      {flashbackProfile.flashBack.firstEventDate.month} {flashbackProfile.flashBack.firstEventDate.year}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <div className="text-xs text-blue-700 mb-1">Second Significant Event</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-blue-900 font-medium">
+                      {flashbackProfile.flashBack.secondEventTrait}
+                    </div>
+                    <div className="text-xs text-neutral-dark">
+                      {flashbackProfile.flashBack.secondEventDate.month} {flashbackProfile.flashBack.secondEventDate.year}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="mt-2 text-xs text-blue-600 italic">
+            These insights are generated based on the customer's birth date and can help personalize your communication.
+          </div>
+        </div>
+      )}
       
       {/* Chat messages */}
       <div className="flex-grow p-2 sm:p-4 overflow-y-auto custom-scrollbar">
