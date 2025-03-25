@@ -126,12 +126,26 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
     if (!newMessage.trim() || !webSocketClient) return;
     
     try {
+      // Check for command pattern ($command) to add metadata
+      let metadata = null;
+      const commandRegex = /\$(\w+)(?:\s+(.+))?/;
+      const match = newMessage.match(commandRegex);
+      
+      if (match) {
+        const [fullMatch, command, value] = match;
+        metadata = {
+          commandType: command,
+          value: value || true
+        };
+      }
+      
       // Send via WebSocket
       webSocketClient.send('message', {
         conversationId,
         content: newMessage,
         senderId: `agent-${agentId}`,
-        isFromAgent: true
+        isFromAgent: true,
+        metadata
       });
       
       // Clear input
