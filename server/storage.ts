@@ -2,7 +2,7 @@ import {
   users, type User, type InsertUser,
   customers, type Customer, type InsertCustomer,
   conversations, type Conversation, type InsertConversation,
-  messages, type Message, type InsertMessage,
+  messages, type Message, type InsertMessage, type MessageMetadata,
   cannedResponses, type CannedResponse, type InsertCannedResponse,
   partners, type Partner, type InsertPartner,
   llmPrompts, type LlmPrompt, type InsertLlmPrompt
