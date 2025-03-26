@@ -254,6 +254,12 @@ export class MemStorage implements IStorage {
       }
     }
     
+    // For the database, metadata must be either a string or null
+    let metadataForStorage: string | null = null;
+    if (processedMetadata) {
+      metadataForStorage = JSON.stringify(processedMetadata);
+    }
+    
     const message: Message = {
       id,
       conversationId: insertMessage.conversationId || null,
@@ -262,7 +268,7 @@ export class MemStorage implements IStorage {
       content: insertMessage.content,
       timestamp: now,
       readStatus: false,
-      metadata: processedMetadata
+      metadata: metadataForStorage
     };
     this.messages.set(id, message);
     

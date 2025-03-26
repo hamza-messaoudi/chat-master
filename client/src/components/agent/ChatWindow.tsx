@@ -38,6 +38,17 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
   const [newPromptTitle, setNewPromptTitle] = useState("");
   const [newPromptContent, setNewPromptContent] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
+  
+  // Command management states
+  const [commands, setCommands] = useState<{id: string; name: string; description: string, example: string}[]>([
+    { id: "1", name: "dob", description: "Collect customer's date of birth", example: "$dob" },
+    { id: "2", name: "account", description: "Retrieve customer account information", example: "$account" },
+    { id: "3", name: "ticket", description: "Create a support ticket", example: "$ticket subject:issue" }
+  ]);
+  const [showNewCommandForm, setShowNewCommandForm] = useState(false);
+  const [newCommandName, setNewCommandName] = useState("");
+  const [newCommandDescription, setNewCommandDescription] = useState("");
+  const [newCommandExample, setNewCommandExample] = useState("");
   const [showNewPromptForm, setShowNewPromptForm] = useState(false);
   const [flashbackProfile, setFlashbackProfile] = useState<FlashbackProfile | null>(null);
   const [showFlashback, setShowFlashback] = useState(false);
@@ -886,6 +897,137 @@ export default function ChatWindow({ conversationId, agentId, webSocketClient, o
                       />
                       <span className="text-sm w-8 text-center">{automationDelay}s</span>
                     </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Command Management Section */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>Command Management</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-6"
+                        onClick={() => setShowNewCommandForm(!showNewCommandForm)}
+                      >
+                        {showNewCommandForm ? 'Cancel' : '+ New'}
+                      </Button>
+                    </div>
+                    
+                    {showNewCommandForm ? (
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!newCommandName.trim() || !newCommandDescription.trim()) return;
+                        
+                        // Add new command
+                        const newCommand = {
+                          id: Date.now().toString(),
+                          name: newCommandName.trim(),
+                          description: newCommandDescription.trim(),
+                          example: newCommandExample || `$${newCommandName.trim()}`
+                        };
+                        
+                        setCommands([...commands, newCommand]);
+                        setNewCommandName("");
+                        setNewCommandDescription("");
+                        setNewCommandExample("");
+                        setShowNewCommandForm(false);
+                        
+                        toast({
+                          title: "Command Added",
+                          description: `Command $${newCommandName} has been added successfully.`
+                        });
+                      }} 
+                      className="space-y-3 border rounded-md p-2 bg-gray-50"
+                      >
+                        <div className="space-y-1">
+                          <Label htmlFor="command-name" className="text-xs">Command Name</Label>
+                          <Input
+                            id="command-name"
+                            value={newCommandName}
+                            onChange={(e) => setNewCommandName(e.target.value)}
+                            placeholder="E.g., dob"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor="command-description" className="text-xs">Description</Label>
+                          <Input
+                            id="command-description"
+                            value={newCommandDescription}
+                            onChange={(e) => setNewCommandDescription(e.target.value)}
+                            placeholder="E.g., Collect date of birth"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor="command-example" className="text-xs">Example (optional)</Label>
+                          <Input
+                            id="command-example"
+                            value={newCommandExample}
+                            onChange={(e) => setNewCommandExample(e.target.value)}
+                            placeholder="E.g., $dob YYYY-MM-DD"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        
+                        <Button 
+                          type="submit" 
+                          size="sm" 
+                          className="w-full"
+                          disabled={!newCommandName.trim() || !newCommandDescription.trim()}
+                        >
+                          Add Command
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {commands.length > 0 ? (
+                          commands.map((command) => (
+                            <div 
+                              key={command.id} 
+                              className="text-sm border rounded-md p-2 flex justify-between items-center hover:bg-gray-50"
+                              onClick={() => {
+                                // Insert command into the message input
+                                setNewMessage(prev => prev + ` ${command.example} `);
+                                toast({
+                                  title: "Command Inserted",
+                                  description: `${command.example} has been inserted into your message.`
+                                });
+                              }}
+                            >
+                              <div>
+                                <div className="font-medium">${command.name}</div>
+                                <div className="text-xs text-gray-500">{command.description}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">Command</Badge>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCommands(commands.filter(c => c.id !== command.id));
+                                    toast({
+                                      title: "Command Removed",
+                                      description: `Command $${command.name} has been removed.`
+                                    });
+                                  }}
+                                  className="text-xs text-red-500 hover:text-red-700"
+                                >
+                                  <span className="material-icons text-sm">delete</span>
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500 italic">
+                            No commands available. Create one to get started.
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <Separator />
