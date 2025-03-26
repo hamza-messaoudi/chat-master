@@ -89,6 +89,8 @@ export default function ChatWindow({
   const [flashbackProfile, setFlashbackProfile] =
     useState<FlashbackProfile | null>(null);
   const [showFlashback, setShowFlashback] = useState(false);
+  const [birthdate, setBirthdate] = useState("");
+  const [isSavingBirthdate, setIsSavingBirthdate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -479,6 +481,57 @@ export default function ChatWindow({
     } catch (error) {
       console.error("Error resolving conversation:", error);
       addNotification("Error", "Failed to resolve conversation.", "system");
+    }
+  };
+  
+  // Handle updating customer birthdate
+  const handleUpdateBirthdate = async () => {
+    if (!birthdate || !conversation?.customerId) return;
+    
+    try {
+      setIsSavingBirthdate(true);
+      
+      const response = await fetch(`/api/customers/${conversation.customerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ birthdate }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update customer birthdate");
+      
+      // Get updated customer data with birthdate
+      fetch(`/api/customers/${conversation.customerId}/flashback`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to fetch flashback");
+        })
+        .then((data) => {
+          setFlashbackProfile(data);
+          setShowFlashback(true);
+          toast({
+            title: "Birthdate Updated",
+            description: "Customer personality insights are now available",
+          });
+        })
+        .catch((err) => {
+          console.error("Error fetching flashback profile:", err);
+          toast({
+            title: "Error",
+            description: "Failed to load personality insights",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsSavingBirthdate(false);
+        });
+    } catch (error) {
+      console.error("Error updating birthdate:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update customer birthdate",
+        variant: "destructive",
+      });
+      setIsSavingBirthdate(false);
     }
   };
 
@@ -879,6 +932,73 @@ export default function ChatWindow({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Flashback button & popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 rounded-full flex-shrink-0"
+                  aria-label="Customer Flashback"
+                >
+                  <span className="material-icons text-sm">psychology</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 sm:w-80">
+                <div className="space-y-4 p-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Customer Flashback</h3>
+                    {flashbackProfile && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setShowFlashback(!showFlashback)}
+                      >
+                        {showFlashback ? "Hide Panel" : "Show Panel"}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {flashbackProfile ? (
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        Flashback profile is available for this customer. You can show or hide the panel to view the personality insights.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-sm mb-2">
+                        Add the customer's birthdate to generate a personality flashback.
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="customer-birthdate">Birthdate</Label>
+                        <Input
+                          id="customer-birthdate"
+                          type="date"
+                          value={birthdate}
+                          onChange={(e) => setBirthdate(e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleUpdateBirthdate}
+                        disabled={!birthdate || isSavingBirthdate}
+                      >
+                        {isSavingBirthdate ? (
+                          <div className="flex items-center gap-2">
+                            <span className="material-icons animate-spin text-xs">refresh</span>
+                            <span>Saving...</span>
+                          </div>
+                        ) : "Generate Flashback"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+            
             {/* AI response popover (compact) */}
             <Popover>
               <PopoverTrigger asChild>
