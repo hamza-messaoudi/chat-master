@@ -723,12 +723,24 @@ export default function ChatWindow({
               <span className="material-icons text-sm mr-1">psychology</span>
               Customer Personality Insights
             </div>
-            <button
-              className="text-blue-600 hover:text-blue-800 text-xs"
-              onClick={() => setShowFlashback(false)}
-            >
-              Hide
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="text-orange-600 hover:text-orange-800 text-xs"
+                onClick={() => {
+                  setFlashbackProfile(null);
+                  setBirthdate("");
+                  setShowFlashback(false);
+                }}
+              >
+                Reset Birthdate
+              </button>
+              <button
+                className="text-blue-600 hover:text-blue-800 text-xs"
+                onClick={() => setShowFlashback(false)}
+              >
+                Hide
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -962,8 +974,28 @@ export default function ChatWindow({
                   
                   {flashbackProfile ? (
                     <div className="space-y-2">
-                      <div className="text-sm">
+                      <div className="text-sm mb-2">
                         Flashback profile is available for this customer. You can show or hide the panel to view the personality insights.
+                      </div>
+                      <div className="flex justify-between">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setShowFlashback(!showFlashback)}
+                        >
+                          {showFlashback ? "Hide Panel" : "Show Panel"}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                          onClick={() => {
+                            setFlashbackProfile(null);
+                            setBirthdate("");
+                          }}
+                        >
+                          Reset Birthdate
+                        </Button>
                       </div>
                     </div>
                   ) : (
