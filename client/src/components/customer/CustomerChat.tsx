@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import WebSocketClient from "@/lib/websocket";
 import { Message, FlashbackProfile } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CustomerChatProps {
   customerId: string;
@@ -21,6 +23,10 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   const [isConnected, setIsConnected] = useState(false);
   const [flashbackProfile, setFlashbackProfile] = useState<FlashbackProfile | null>(null);
   const [showFlashback, setShowFlashback] = useState(false);
+  const [birthdate, setBirthdate] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
+  const [showBirthdateForm, setShowBirthdateForm] = useState(false);
+  const [isUpdatingBirthdate, setIsUpdatingBirthdate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -246,6 +252,91 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
   const toggleFlashbackView = () => {
     setShowFlashback(!showFlashback);
   };
+  
+  // Toggle birthdate form visibility
+  const toggleBirthdateForm = () => {
+    setShowBirthdateForm(!showBirthdateForm);
+    setBirthdateError("");
+  };
+  
+  // Handle birthdate input change
+  const handleBirthdateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBirthdate(e.target.value);
+    setBirthdateError("");
+  };
+  
+  // Validate birthdate
+  const validateBirthdate = (date: string): boolean => {
+    const parsedDate = new Date(date);
+    
+    // Check if date is valid
+    if (isNaN(parsedDate.getTime())) {
+      setBirthdateError("Please enter a valid date");
+      return false;
+    }
+    
+    // Check if date is not in the future
+    if (parsedDate > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      return false;
+    }
+    
+    // Check if person is not too old (e.g., more than 120 years)
+    const maxAge = new Date();
+    maxAge.setFullYear(maxAge.getFullYear() - 120);
+    if (parsedDate < maxAge) {
+      setBirthdateError("Birthdate seems too far in the past");
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Update customer birthdate
+  const updateCustomerBirthdate = async () => {
+    if (!validateBirthdate(birthdate)) return;
+    
+    setIsUpdatingBirthdate(true);
+    
+    try {
+      // Update the customer profile via API
+      await fetch(`/api/customers/${customerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ birthdate }),
+      });
+      
+      // Fetch the flashback profile
+      const response = await fetch(`/api/customers/${customerId}/flashback`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFlashbackProfile(data);
+        setShowFlashback(true);
+        setShowBirthdateForm(false);
+        
+        toast({
+          title: "Birthdate Updated",
+          description: "Flashback profile is now available.",
+        });
+        
+        // Invalidate customer data to refresh
+        queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}`] });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch flashback profile");
+      }
+    } catch (error) {
+      console.error("Error updating birthdate:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update birthdate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingBirthdate(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-neutral-light">
@@ -254,13 +345,21 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
         <span className="material-icons mr-2">support_agent</span>
         <h1 className="text-xl">Support Chat</h1>
         <div className="ml-auto flex items-center">
-          {flashbackProfile && (
+          {flashbackProfile ? (
             <button 
               onClick={toggleFlashbackView} 
               className="mr-3 text-xs bg-accent text-white px-2 py-1 rounded-full flex items-center"
             >
               <span className="material-icons text-xs mr-1">history</span>
               Flashback
+            </button>
+          ) : (
+            <button 
+              onClick={toggleBirthdateForm} 
+              className="mr-3 text-xs bg-white text-primary px-2 py-1 rounded-full flex items-center"
+            >
+              <span className="material-icons text-xs mr-1">cake</span>
+              Add Birthdate
             </button>
           )}
           {isConnected ? (
@@ -270,6 +369,63 @@ export default function CustomerChat({ customerId, conversationId }: CustomerCha
           )}
         </div>
       </div>
+      
+      {/* Birthdate form panel */}
+      {showBirthdateForm && !flashbackProfile && (
+        <div className="bg-white p-4 border-b border-neutral-medium">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <span className="material-icons mr-2 text-primary">cake</span>
+                Enter Customer's Birthdate
+              </CardTitle>
+              <CardDescription>
+                Entering a birthdate will provide additional personalized insights for this customer
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-4">
+                <div>
+                  <Input
+                    type="date"
+                    value={birthdate}
+                    onChange={handleBirthdateChange}
+                    className="w-full"
+                    placeholder="YYYY-MM-DD"
+                  />
+                  {birthdateError && (
+                    <p className="text-sm text-error mt-1">{birthdateError}</p>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={updateCustomerBirthdate}
+                    disabled={!birthdate || isUpdatingBirthdate}
+                    className="bg-primary text-white"
+                  >
+                    {isUpdatingBirthdate ? (
+                      <>
+                        <span className="material-icons animate-spin mr-2">refresh</span>
+                        Processing...
+                      </>
+                    ) : "Save Birthdate"}
+                  </Button>
+                  <Button 
+                    onClick={toggleBirthdateForm}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <div className="text-xs text-neutral-dark mt-2">
+                  <span className="material-icons text-xs align-text-bottom mr-1">info</span>
+                  The birthdate will be used to generate a flashback profile with key events from the customer's past.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       {/* Flashback panel */}
       {showFlashback && flashbackProfile && (
