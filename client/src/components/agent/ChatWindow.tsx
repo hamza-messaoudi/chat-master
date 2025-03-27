@@ -1068,6 +1068,7 @@ export default function ChatWindow({
                       )}
                     </div>
                   </TabsContent>
+                </Tabs>
 
                   <TabsContent value="custom" className="mt-2">
                     <div className="space-y-2">
