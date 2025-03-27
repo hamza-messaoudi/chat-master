@@ -1045,7 +1045,113 @@ export default function ChatWindow({
               </PopoverTrigger>
               <PopoverContent className="w-72 sm:w-80">
                 <Tabs defaultValue="templates">
-                  <TabsList className="w-full">
+                  <TabsList className="w-full grid grid-cols-3">
+                    <TabsTrigger value="templates">Templates</TabsTrigger>
+                    <TabsTrigger value="custom">Custom</TabsTrigger>
+                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="templates" className="mt-2">
+                    <div className="space-y-2">
+                      {isGeneratingLlmResponse ? (
+                        <div className="p-4 flex justify-center">
+                          <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {/* Existing prompt templates */}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="custom" className="mt-2">
+                    <div className="space-y-2">
+                      <Textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Enter custom AI prompt..."
+                        className="min-h-[100px] text-sm"
+                      />
+                      <Button 
+                        className="w-full"
+                        onClick={handleSubmitCustomPrompt}
+                        disabled={!customPrompt.trim() || isGeneratingLlmResponse}
+                      >
+                        Generate Response
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="settings" className="mt-2">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Automation</Label>
+                          <Switch
+                            checked={isAutomationActive}
+                            onCheckedChange={setIsAutomationActive}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="delay" className="text-xs">
+                            Response Delay (seconds)
+                          </Label>
+                          <Input
+                            id="delay"
+                            type="number"
+                            min="0"
+                            value={automationDelay}
+                            onChange={(e) => setAutomationDelay(Number(e.target.value))}
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <Label>Create New Template</Label>
+                        <Input
+                          value={newPromptTitle}
+                          onChange={(e) => setNewPromptTitle(e.target.value)}
+                          placeholder="Template title"
+                          className="text-sm"
+                        />
+                        <Textarea
+                          value={newPromptContent}
+                          onChange={(e) => setNewPromptContent(e.target.value)}
+                          placeholder="Template content..."
+                          className="min-h-[80px] text-sm"
+                        />
+                        <Select 
+                          value={newPromptCategory}
+                          onValueChange={setNewPromptCategory}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="greeting">Greeting</SelectItem>
+                            <SelectItem value="closing">Closing</SelectItem>
+                            <SelectItem value="support">Support</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          className="w-full"
+                          onClick={() => createLlmPrompt.mutate()}
+                          disabled={!newPromptTitle || !newPromptContent}
+                        >
+                          Save Template
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
                     <TabsTrigger value="templates" className="flex-1">
                       Templates
                     </TabsTrigger>
