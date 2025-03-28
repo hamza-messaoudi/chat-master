@@ -61,7 +61,6 @@ export default function ChatWindow({
     null,
   );
   const [newPromptTitle, setNewPromptTitle] = useState("");
-  const [newPromptContent, setNewPromptContent] = useState("");
   const [newSystemPrompt, setNewSystemPrompt] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
 
@@ -340,9 +339,9 @@ export default function ChatWindow({
         body: JSON.stringify({
           agentId,
           title: newPromptTitle,
-          prompt: newPromptContent,
           systemPrompt: newSystemPrompt,
           category: newPromptCategory,
+          // prompt field is now optional
         }),
       });
 
@@ -355,7 +354,6 @@ export default function ChatWindow({
     onSuccess: () => {
       // Reset form fields
       setNewPromptTitle("");
-      setNewPromptContent("");
       setNewSystemPrompt("");
       setNewPromptCategory("general");
       setShowNewPromptForm(false);
@@ -383,8 +381,8 @@ export default function ChatWindow({
   // Handle saving a new prompt template
   const handleSavePrompt = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPromptTitle.trim() || !newPromptContent.trim()) return;
-    // Note: System prompt is optional, so we don't need to check if it's empty
+    if (!newPromptTitle.trim() || !newSystemPrompt.trim()) return;
+    // System prompt is now required, user prompt content is no longer needed
 
     createLlmPrompt.mutate();
   };
@@ -1075,7 +1073,7 @@ export default function ChatWindow({
                               >
                                 <div className="font-medium">{prompt.title}</div>
                                 <div className="text-sm text-neutral-dark truncate">
-                                  {prompt.prompt}
+                                  {prompt.systemPrompt || "No system prompt defined"}
                                 </div>
                               </div>
                             ))
@@ -1411,23 +1409,12 @@ export default function ChatWindow({
                             value={newSystemPrompt}
                             onChange={(e) => setNewSystemPrompt(e.target.value)}
                             placeholder="System instructions that define AI behavior and limitations..."
-                            className="min-h-[80px] text-sm"
+                            className="min-h-[120px] text-sm"
+                            required
                           />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label htmlFor="prompt-content" className="text-xs">
-                            User Prompt Template
-                          </Label>
-                          <Textarea
-                            id="prompt-content"
-                            value={newPromptContent}
-                            onChange={(e) =>
-                              setNewPromptContent(e.target.value)
-                            }
-                            placeholder="Instructions for the AI to generate a response..."
-                            className="min-h-[80px] text-sm"
-                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            The system prompt defines how the AI should behave. User prompts will always be derived from the conversation history.
+                          </div>
                         </div>
 
                         <Button
@@ -1436,7 +1423,7 @@ export default function ChatWindow({
                           className="w-full"
                           disabled={
                             !newPromptTitle.trim() ||
-                            !newPromptContent.trim() ||
+                            !newSystemPrompt.trim() ||
                             createLlmPrompt.isPending
                           }
                         >

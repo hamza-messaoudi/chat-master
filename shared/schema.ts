@@ -48,8 +48,8 @@ export const llmPrompts = pgTable("llm_prompts", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id").references(() => users.id),
   title: text("title").notNull(),
-  prompt: text("prompt").notNull(),
-  systemPrompt: text("system_prompt"),
+  prompt: text("prompt"),  // Making this optional, since we'll focus on systemPrompt
+  systemPrompt: text("system_prompt").notNull(),  // Making this required
   category: text("category").default("general"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -109,9 +109,10 @@ export const insertPartnerSchema = createInsertSchema(partners).pick({
 export const insertLlmPromptSchema = createInsertSchema(llmPrompts).pick({
   agentId: true,
   title: true,
-  prompt: true,
-  systemPrompt: true,
   category: true,
+  systemPrompt: true,
+}).extend({
+  prompt: z.string().optional(),
 });
 
 // Types

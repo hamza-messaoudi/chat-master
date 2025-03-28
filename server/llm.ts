@@ -11,13 +11,11 @@ const openai = new OpenAI({
 /**
  * Generate a response using the OpenAI API
  * This function connects to the OpenAI API and generates a response
- * based on the conversation context and prompt
+ * based on the conversation context and system prompt
  */
 export async function generateLlmResponse(
-  prompt: string,
   conversation: Conversation,
   messages: Message[],
-  promptTemplate?: string,
   systemPrompt?: string | null,
 ): Promise<string> {
   try {
@@ -39,9 +37,7 @@ export async function generateLlmResponse(
         The customer ID is ${conversation.customerId}. 
         The conversation status is ${conversation.status}.
         
-        ${promptTemplate ? `Use the following template for your response: ${promptTemplate}` : ""}
-        
-        ${prompt}`,
+        Respond based on the conversation history and be professional and helpful.`,
     };
 
     // Combine all messages for the API request
@@ -90,31 +86,26 @@ export async function handleLlmRequest(req: Request, res: Response) {
 
     const messages = await storage.getMessagesByConversationId(conversationId);
 
-    let promptText = "Please provide a helpful response.";
-    let promptTemplate;
-
-    // If a prompt ID is provided, get the prompt from storage
+    // Handle system prompt
     let systemPrompt: string | undefined;
+    
+    // If a prompt ID is provided, get the stored system prompt
     if (promptId) {
       const prompt = await storage.getLlmPrompt(promptId);
       if (prompt) {
-        promptText = prompt.prompt;
-        promptTemplate = prompt.title;
         systemPrompt = prompt.systemPrompt || undefined;
       }
     }
-
-    // If a custom prompt is provided, use that instead
+    
+    // If custom prompt is provided, use as system prompt instead
     if (customPrompt) {
-      promptText = customPrompt;
+      systemPrompt = customPrompt;
     }
 
-    // Generate the response
+    // Generate the response using only the conversation and system prompt
     const response = await generateLlmResponse(
-      promptText,
       conversation,
       messages,
-      promptTemplate,
       systemPrompt,
     );
 
