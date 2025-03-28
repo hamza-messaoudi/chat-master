@@ -60,6 +60,7 @@ export default function ChatWindow({
   const [automationCountdown, setAutomationCountdown] = useState<number | null>(
     null,
   );
+  const [defaultPromptId, setDefaultPromptId] = useState<number | null>(null);
   const [newPromptTitle, setNewPromptTitle] = useState("");
   const [newSystemPrompt, setNewSystemPrompt] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
@@ -430,11 +431,23 @@ export default function ChatWindow({
           setAutomationCountdown(null);
           if (countdownInterval) clearInterval(countdownInterval);
 
-          // Find an appropriate LLM prompt to use (we'll use the first available one)
+          // Use the default prompt if one is selected, otherwise use the first available prompt
           if (llmPrompts && llmPrompts.length > 0) {
-            handleSelectLlmPrompt(llmPrompts[0]);
+            if (defaultPromptId) {
+              // Find the prompt with the matching ID
+              const defaultPrompt = llmPrompts.find(prompt => prompt.id === defaultPromptId);
+              if (defaultPrompt) {
+                handleSelectLlmPrompt(defaultPrompt);
+              } else {
+                // If the default prompt ID doesn't match any prompts, use the first one
+                handleSelectLlmPrompt(llmPrompts[0]);
+              }
+            } else {
+              // No default selected, use the first one
+              handleSelectLlmPrompt(llmPrompts[0]);
+            }
           } else {
-            // Use a default prompt if no templates are available
+            // Use a fallback prompt if no templates are available
             generateLlmResponse.mutate({
               customPrompt:
                 "Please provide a helpful response to the customer's inquiry.",
@@ -456,7 +469,7 @@ export default function ChatWindow({
         clearInterval(countdownInterval);
       }
     };
-  }, [isAutomationActive, messages, automationDelay, llmPrompts]);
+  }, [isAutomationActive, messages, automationDelay, llmPrompts, defaultPromptId]);
 
   // Handle marking a conversation as resolved
   const handleResolveConversation = async () => {
@@ -1170,6 +1183,31 @@ export default function ChatWindow({
                       <span className="text-sm w-8 text-center">
                         {automationDelay}s
                       </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="default-prompt">
+                      Default AI Prompt
+                    </Label>
+                    <Select
+                      value={defaultPromptId?.toString() || ""}
+                      onValueChange={(value) => setDefaultPromptId(value ? Number(value) : null)}
+                    >
+                      <SelectTrigger id="default-prompt" className="w-full">
+                        <SelectValue placeholder="Select a default template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No default (use first available)</SelectItem>
+                        {llmPrompts?.map((prompt) => (
+                          <SelectItem key={prompt.id} value={prompt.id.toString()}>
+                            {prompt.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-neutral-dark">
+                      This template will be used for automated responses.
                     </div>
                   </div>
 
