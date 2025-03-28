@@ -56,7 +56,7 @@ export default function ChatWindow({
   const [isGeneratingLlmResponse, setIsGeneratingLlmResponse] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [isAutomationActive, setIsAutomationActive] = useState(true);
-  const [automationDelay, setAutomationDelay] = useState(60); // seconds
+  const [automationDelay, setAutomationDelay] = useState(6); // seconds
   const [automationCountdown, setAutomationCountdown] = useState<number | null>(
     null,
   );
@@ -443,7 +443,9 @@ export default function ChatWindow({
           if (llmPrompts && llmPrompts.length > 0) {
             if (defaultPromptId) {
               // Find the prompt with the matching ID
-              const defaultPrompt = llmPrompts.find(prompt => prompt.id === defaultPromptId);
+              const defaultPrompt = llmPrompts.find(
+                (prompt) => prompt.id === defaultPromptId,
+              );
               if (defaultPrompt) {
                 handleSelectLlmPrompt(defaultPrompt);
               } else {
@@ -477,7 +479,13 @@ export default function ChatWindow({
         clearInterval(countdownInterval);
       }
     };
-  }, [isAutomationActive, messages, automationDelay, llmPrompts, defaultPromptId]);
+  }, [
+    isAutomationActive,
+    messages,
+    automationDelay,
+    llmPrompts,
+    defaultPromptId,
+  ]);
 
   // Handle marking a conversation as resolved
   const handleResolveConversation = async () => {
@@ -506,22 +514,25 @@ export default function ChatWindow({
       addNotification("Error", "Failed to resolve conversation.", "system");
     }
   };
-  
+
   // Handle updating customer birthdate
   const handleUpdateBirthdate = async () => {
     if (!birthdate || !conversation?.customerId) return;
-    
+
     try {
       setIsSavingBirthdate(true);
-      
-      const response = await fetch(`/api/customers/${conversation.customerId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ birthdate }),
-      });
+
+      const response = await fetch(
+        `/api/customers/${conversation.customerId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ birthdate }),
+        },
+      );
 
       if (!response.ok) throw new Error("Failed to update customer birthdate");
-      
+
       // Get updated customer data with birthdate
       fetch(`/api/customers/${conversation.customerId}/flashback`)
         .then((res) => {
@@ -984,9 +995,9 @@ export default function ChatWindow({
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">Customer Flashback</h3>
                     {flashbackProfile && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-6 px-2 text-xs"
                         onClick={() => setShowFlashback(!showFlashback)}
                       >
@@ -994,22 +1005,24 @@ export default function ChatWindow({
                       </Button>
                     )}
                   </div>
-                  
+
                   {flashbackProfile ? (
                     <div className="space-y-2">
                       <div className="text-sm mb-2">
-                        Flashback profile is available for this customer. You can show or hide the panel to view the personality insights.
+                        Flashback profile is available for this customer. You
+                        can show or hide the panel to view the personality
+                        insights.
                       </div>
                       <div className="flex justify-between">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setShowFlashback(!showFlashback)}
                         >
                           {showFlashback ? "Hide Panel" : "Show Panel"}
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           className="text-orange-600 border-orange-200 hover:bg-orange-50"
                           onClick={() => {
@@ -1024,7 +1037,8 @@ export default function ChatWindow({
                   ) : (
                     <div className="space-y-2">
                       <div className="text-sm mb-2">
-                        Add the customer's birthdate to generate a personality flashback.
+                        Add the customer's birthdate to generate a personality
+                        flashback.
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="customer-birthdate">Birthdate</Label>
@@ -1036,24 +1050,28 @@ export default function ChatWindow({
                           className="w-full"
                         />
                       </div>
-                      <Button 
-                        className="w-full" 
+                      <Button
+                        className="w-full"
                         onClick={handleUpdateBirthdate}
                         disabled={!birthdate || isSavingBirthdate}
                       >
                         {isSavingBirthdate ? (
                           <div className="flex items-center gap-2">
-                            <span className="material-icons animate-spin text-xs">refresh</span>
+                            <span className="material-icons animate-spin text-xs">
+                              refresh
+                            </span>
                             <span>Saving...</span>
                           </div>
-                        ) : "Generate Flashback"}
+                        ) : (
+                          "Generate Flashback"
+                        )}
                       </Button>
                     </div>
                   )}
                 </div>
               </PopoverContent>
             </Popover>
-            
+
             {/* AI response popover (compact) */}
             <Popover>
               <PopoverTrigger asChild>
@@ -1072,7 +1090,7 @@ export default function ChatWindow({
                     <TabsTrigger value="templates">Templates</TabsTrigger>
                     <TabsTrigger value="custom">Custom</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="templates" className="mt-2">
                     <div className="max-h-60 overflow-y-auto">
                       {isGeneratingLlmResponse ? (
@@ -1092,22 +1110,26 @@ export default function ChatWindow({
                                 className="p-2 hover:bg-neutral-light cursor-pointer"
                                 onClick={() => handleSelectLlmPrompt(prompt)}
                               >
-                                <div className="font-medium">{prompt.title}</div>
+                                <div className="font-medium">
+                                  {prompt.title}
+                                </div>
                                 <div className="text-sm text-neutral-dark truncate">
-                                  {prompt.systemPrompt || "No system prompt defined"}
+                                  {prompt.systemPrompt ||
+                                    "No system prompt defined"}
                                 </div>
                               </div>
                             ))
                           ) : (
                             <div className="p-2 text-neutral-dark">
-                              No AI templates available. Create some in the Settings tab.
+                              No AI templates available. Create some in the
+                              Settings tab.
                             </div>
                           )}
                         </>
                       )}
                     </div>
                   </TabsContent>
-                  
+
                   <TabsContent value="custom" className="mt-2">
                     <div className="p-2">
                       <div className="mb-2 text-sm font-medium">
@@ -1122,11 +1144,15 @@ export default function ChatWindow({
                       <Button
                         className="w-full"
                         onClick={handleSubmitCustomPrompt}
-                        disabled={isGeneratingLlmResponse || !customPrompt.trim()}
+                        disabled={
+                          isGeneratingLlmResponse || !customPrompt.trim()
+                        }
                       >
                         {isGeneratingLlmResponse ? (
                           <div className="flex items-center gap-2">
-                            <span className="material-icons animate-spin text-xs">refresh</span>
+                            <span className="material-icons animate-spin text-xs">
+                              refresh
+                            </span>
                             <span>Generating...</span>
                           </div>
                         ) : (
@@ -1195,20 +1221,27 @@ export default function ChatWindow({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="default-prompt">
-                      Default AI Prompt
-                    </Label>
+                    <Label htmlFor="default-prompt">Default AI Prompt</Label>
                     <Select
                       value={defaultPromptId?.toString() || "none"}
-                      onValueChange={(value) => setDefaultPromptId(value !== "none" ? Number(value) : null)}
+                      onValueChange={(value) =>
+                        setDefaultPromptId(
+                          value !== "none" ? Number(value) : null,
+                        )
+                      }
                     >
                       <SelectTrigger id="default-prompt" className="w-full">
                         <SelectValue placeholder="Select a default template" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No default (use first available)</SelectItem>
+                        <SelectItem value="none">
+                          No default (use first available)
+                        </SelectItem>
                         {llmPrompts?.map((prompt) => (
-                          <SelectItem key={prompt.id} value={prompt.id.toString()}>
+                          <SelectItem
+                            key={prompt.id}
+                            value={prompt.id.toString()}
+                          >
                             {prompt.title}
                           </SelectItem>
                         ))}
@@ -1459,7 +1492,9 @@ export default function ChatWindow({
                             required
                           />
                           <div className="text-xs text-gray-500 mt-1">
-                            The system prompt defines how the AI should behave. User prompts will always be derived from the conversation history.
+                            The system prompt defines how the AI should behave.
+                            User prompts will always be derived from the
+                            conversation history.
                           </div>
                         </div>
 
@@ -1546,6 +1581,5 @@ export default function ChatWindow({
         </div>
       </div>
     </div>
-    
   );
 }
