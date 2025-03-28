@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   isAgent: boolean("is_agent").default(false),
+  automationDelay: integer("automation_delay").default(3000), // Default 3-second delay for auto-responses
 });
 
 export const customers = pgTable("customers", {
@@ -67,6 +68,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   isAgent: true,
+  automationDelay: true,
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).pick({

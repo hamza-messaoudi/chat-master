@@ -14,6 +14,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   
   // Customer methods
   getCustomer(id: string): Promise<Customer | undefined>;
@@ -111,10 +112,24 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       // Ensure isAgent is never undefined
-      isAgent: insertUser.isAgent ?? false
+      isAgent: insertUser.isAgent ?? false,
+      // Ensure automationDelay is never undefined
+      automationDelay: insertUser.automationDelay ?? 3000
     };
     this.users.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser: User = {
+      ...user,
+      ...data
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
   
   // Customer methods
@@ -268,7 +283,7 @@ export class MemStorage implements IStorage {
       content: insertMessage.content,
       timestamp: now,
       readStatus: false,
-      metadata: metadataForStorage
+      metadata: processedMetadata // Use parsed metadata object instead of the string
     };
     this.messages.set(id, message);
     
@@ -372,7 +387,7 @@ export class MemStorage implements IStorage {
     const llmPrompt: LlmPrompt = {
       id,
       title: insertLlmPrompt.title,
-      prompt: insertLlmPrompt.prompt,
+      prompt: insertLlmPrompt.prompt || null,
       category: insertLlmPrompt.category || 'general',
       agentId: insertLlmPrompt.agentId || null,
       createdAt: now

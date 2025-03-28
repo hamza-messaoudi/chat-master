@@ -10,6 +10,7 @@ import {
   insertPartnerSchema,
   insertLlmPromptSchema,
   insertCustomerSchema,
+  insertUserSchema,
   type WebSocketMessage
 } from "@shared/schema";
 import { partnerAuthMiddleware } from "./partners";
@@ -85,9 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // If message is from customer, automatically generate an LLM response
             if (!isFromAgent) {
-              // Get the default LLM prompt for the conversation's agent
-              // or use the first available prompt
-              setTimeout(async () => {
+              // Get the default LLM prompt for the conversation's agent immediately
+              // even though we may not send until later - this way we can prepare the
+              // response in the background
+              (async () => {
                 try {
                   // Get all LLM prompts for this agent
                   const agentId = conversation.agentId || 1; // Default to agent 1 if not assigned
@@ -123,12 +125,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     })
                   } as unknown as Response;
                   
-                  // Call the LLM handler to generate and send the response
+                  // Send response immediately - the client will handle the display
+                  // timing based on the agent's automation delay settings
                   await handleLlmRequest(mockReq, mockRes);
                 } catch (error) {
                   console.error(`Error auto-generating LLM response for conversation ${conversationId}:`, error);
                 }
-              }, 1000); // Small delay to simulate natural response time
+              })();
             }
           }
         } else if (data.type === 'typing') {
@@ -671,6 +674,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error generating flashback profile:', error);
       return res.status(500).json({ error: 'Failed to generate flashback profile' });
+    }
+  });
+
+  // 7. User Settings Routes
+  app.patch('/api/users/:id/automation-delay', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { automationDelay } = req.body;
+      
+      // Validate the delay value
+      const automationDelaySchema = z.number().min(1).max(10);
+      const validateData = automationDelaySchema.safeParse(automationDelay);
+      
+      if (!validateData.success) {
+        return res.status(400).json({ error: 'Invalid automation delay value. Must be between 1 and 10 seconds.' });
+      }
+      
+      // Update the user
+      const user = await storage.updateUser(Number(id), { 
+        automationDelay: automationDelay * 1000 // Convert to milliseconds for storage
+      });
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      return res.json({ 
+        id: user.id,
+        automationDelay: user.automationDelay ? user.automationDelay / 1000 : 3 // Convert back to seconds for client
+      });
+    } catch (error) {
+      console.error('Error updating user automation delay:', error);
+      return res.status(500).json({ error: 'Failed to update automation delay' });
     }
   });
   

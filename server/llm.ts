@@ -115,36 +115,81 @@ export async function handleLlmRequest(req: Request, res: Response) {
       // Import the WebSocket clients map
       const { clients } = require('./routes');
       
-      // Create a new message from the agent
-      const newMessage = await storage.createMessage({
-        conversationId,
-        senderId: `agent-${conversation.agentId || 1}`, // Use conversation's agent ID or default to 1
-        isFromAgent: true,
-        content: generatedResponse
-      });
+      // If there's an agent assigned, get their automationDelay setting
+      let automationDelay = 3000; // Default delay is 3 seconds (3000ms)
+      if (conversation.agentId) {
+        try {
+          const agent = await storage.getUser(conversation.agentId);
+          // Convert milliseconds to seconds (UI shows seconds, DB stores milliseconds)
+          if (agent && typeof agent.automationDelay === 'number') {
+            automationDelay = agent.automationDelay;
+          }
+        } catch (error) {
+          console.warn('Error getting agent automation delay, using default:', error);
+        }
+      }
       
-      // Broadcast to the customer
+      // Send a typing indicator first to show "agent is typing..."
       const customerWs = clients.get(conversation.customerId);
       if (customerWs && customerWs.readyState === WebSocket.OPEN) {
         customerWs.send(JSON.stringify({
-          type: 'message',
-          payload: newMessage
+          type: 'typing',
+          payload: { 
+            conversationId: conversation.id, 
+            isTyping: true,
+            isAgent: true
+          }
         }));
       }
       
-      // Broadcast to the agent if assigned
-      if (conversation.agentId) {
-        const agentWs = clients.get(`agent-${conversation.agentId}`);
-        if (agentWs && agentWs.readyState === WebSocket.OPEN) {
-          agentWs.send(JSON.stringify({
+      // Use the agent's automationDelay setting to determine when to send the actual message
+      setTimeout(async () => {
+        // Create a new message from the agent
+        const newMessage = await storage.createMessage({
+          conversationId,
+          senderId: `agent-${conversation.agentId || 1}`, // Use conversation's agent ID or default to 1
+          isFromAgent: true,
+          content: generatedResponse
+        });
+        
+        // Stop typing indicator
+        if (customerWs && customerWs.readyState === WebSocket.OPEN) {
+          customerWs.send(JSON.stringify({
+            type: 'typing',
+            payload: { 
+              conversationId: conversation.id, 
+              isTyping: false,
+              isAgent: true
+            }
+          }));
+          
+          // Send the actual message
+          customerWs.send(JSON.stringify({
             type: 'message',
             payload: newMessage
           }));
         }
-      }
+        
+        // Broadcast to the agent if assigned
+        if (conversation.agentId) {
+          const agentWs = clients.get(`agent-${conversation.agentId}`);
+          if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+            agentWs.send(JSON.stringify({
+              type: 'message',
+              payload: newMessage
+            }));
+          }
+        }
+        
+        console.log(`Auto-response for conversation ${conversationId} sent after ${automationDelay}ms delay`);
+      }, automationDelay);
       
-      // Return the sent message
-      return res.status(200).json({ message: newMessage });
+      // Return immediate acknowledgement that the message will be sent
+      return res.status(200).json({ 
+        status: 'scheduled',
+        delay: automationDelay,
+        response: generatedResponse
+      });
     }
     
     // Otherwise just return the generated response to be added to input field

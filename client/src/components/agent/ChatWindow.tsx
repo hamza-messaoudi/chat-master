@@ -56,7 +56,8 @@ export default function ChatWindow({
   const [isGeneratingLlmResponse, setIsGeneratingLlmResponse] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [isAutomationActive, setIsAutomationActive] = useState(true);
-  const [automationDelay, setAutomationDelay] = useState(6); // seconds
+  const [automationDelay, setAutomationDelay] = useState(3); // default 3 seconds
+  const [initialAutomationDelay, setInitialAutomationDelay] = useState(3); // to track if value changed
   const [automationCountdown, setAutomationCountdown] = useState<number | null>(
     null,
   );
@@ -285,11 +286,16 @@ export default function ChatWindow({
 
   // Generate LLM response
   const generateLlmResponse = useMutation({
-    mutationFn: async (data: { promptId?: number; customPrompt?: string }) => {
+    mutationFn: async (data: { 
+      promptId?: number; 
+      customPrompt?: string; 
+      autoSend?: boolean;
+    }) => {
       const payload = {
         conversationId,
         ...(data.promptId && { promptId: data.promptId }),
         ...(data.customPrompt && { customPrompt: data.customPrompt }),
+        ...(data.autoSend !== undefined && { autoSend: data.autoSend }),
       };
 
       const response = await fetch("/api/llm/generate", {
@@ -303,15 +309,31 @@ export default function ChatWindow({
       }
 
       const responseData = await response.json();
-      return responseData as { response: string };
+      return responseData;
     },
-    onSuccess: (data: { response: string }) => {
-      setNewMessage(data.response);
+    onSuccess: (data) => {
+      // Check if we got a response (manual mode) or a message (auto mode)
+      if ('response' in data) {
+        // Manual mode: set the response in the input field
+        setNewMessage(data.response);
+        toast({
+          title: "Response Generated",
+          description: "AI-generated response has been added to your input",
+        });
+      } else if ('message' in data) {
+        // Auto mode: message was sent automatically
+        toast({
+          title: "Auto-Response Sent",
+          description: "An AI-generated response was automatically sent to the customer",
+        });
+        
+        // Invalidate queries to update message list
+        queryClient.invalidateQueries({
+          queryKey: [`/api/conversations/${conversationId}/messages`],
+        });
+      }
+      
       setIsGeneratingLlmResponse(false);
-      toast({
-        title: "Response Generated",
-        description: "AI-generated response has been added to your input",
-      });
     },
     onError: (error) => {
       console.error("Error generating LLM response:", error);
@@ -324,18 +346,36 @@ export default function ChatWindow({
     },
   });
 
-  // Handle selecting an LLM prompt
-  const handleSelectLlmPrompt = (prompt: LlmPrompt) => {
+  // Handle selecting an LLM prompt (manual mode by default)
+  const handleSelectLlmPrompt = (prompt: LlmPrompt, autoSend = false) => {
     setIsGeneratingLlmResponse(true);
-    generateLlmResponse.mutate({ promptId: prompt.id });
+    generateLlmResponse.mutate({ 
+      promptId: prompt.id,
+      autoSend 
+    });
   };
 
-  // Handle submitting a custom prompt
+  // Handle submitting a custom prompt (manual mode by default)
   const handleSubmitCustomPrompt = () => {
     if (!customPrompt.trim()) return;
 
     setIsGeneratingLlmResponse(true);
-    generateLlmResponse.mutate({ customPrompt });
+    generateLlmResponse.mutate({ 
+      customPrompt,
+      autoSend: false
+    });
+    setCustomPrompt("");
+  };
+  
+  // Handle auto-sending custom prompt
+  const handleAutoSendCustomPrompt = () => {
+    if (!customPrompt.trim()) return;
+
+    setIsGeneratingLlmResponse(true);
+    generateLlmResponse.mutate({ 
+      customPrompt,
+      autoSend: true
+    });
     setCustomPrompt("");
   };
 
@@ -395,6 +435,47 @@ export default function ChatWindow({
 
     createLlmPrompt.mutate();
   };
+  
+  // Mutation to update the agent's automation delay
+  const updateAutomationDelay = useMutation({
+    mutationFn: async (delay: number) => {
+      const response = await fetch(`/api/users/${agentId}/automation-delay`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ automationDelay: delay }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update automation delay");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      // Update the initial value to track changes
+      setInitialAutomationDelay(automationDelay);
+      
+      toast({
+        title: "Settings Updated",
+        description: `Automation delay has been set to ${automationDelay} seconds.`,
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating automation delay:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update automation delay settings.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle saving the automation delay
+  const handleSaveAutomationDelay = () => {
+    if (automationDelay !== initialAutomationDelay) {
+      updateAutomationDelay.mutate(automationDelay);
+    }
+  };
 
   // Toggle automation mode
   const toggleAutomation = () => {
@@ -447,20 +528,21 @@ export default function ChatWindow({
                 (prompt) => prompt.id === defaultPromptId,
               );
               if (defaultPrompt) {
-                handleSelectLlmPrompt(defaultPrompt);
+                handleSelectLlmPrompt(defaultPrompt, true);
               } else {
                 // If the default prompt ID doesn't match any prompts, use the first one
-                handleSelectLlmPrompt(llmPrompts[0]);
+                handleSelectLlmPrompt(llmPrompts[0], true);
               }
             } else {
               // No default selected, use the first one
-              handleSelectLlmPrompt(llmPrompts[0]);
+              handleSelectLlmPrompt(llmPrompts[0], true);
             }
           } else {
             // Use a fallback prompt if no templates are available
             generateLlmResponse.mutate({
               customPrompt:
                 "Please provide a helpful response to the customer's inquiry.",
+              autoSend: true
             });
           }
         }, automationDelay * 1000);
@@ -1207,9 +1289,9 @@ export default function ChatWindow({
                     <div className="flex items-center gap-2">
                       <Slider
                         id="response-delay"
-                        min={5}
-                        max={120}
-                        step={5}
+                        min={1}
+                        max={10}
+                        step={1}
                         value={[automationDelay]}
                         onValueChange={(value) => setAutomationDelay(value[0])}
                         className="flex-grow"
@@ -1218,6 +1300,13 @@ export default function ChatWindow({
                         {automationDelay}s
                       </span>
                     </div>
+                    <Button 
+                      size="sm" 
+                      onClick={handleSaveAutomationDelay}
+                      disabled={updateAutomationDelay.isPending}
+                    >
+                      {updateAutomationDelay.isPending ? "Saving..." : "Save Delay Settings"}
+                    </Button>
                   </div>
 
                   <div className="space-y-2">
