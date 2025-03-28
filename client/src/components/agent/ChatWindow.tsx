@@ -107,6 +107,28 @@ export default function ChatWindow({
       return response.json();
     },
   });
+  
+  // Fetch user's automation delay settings
+  useEffect(() => {
+    const fetchUserAutomationDelay = async () => {
+      try {
+        const response = await fetch(`/api/users/${agentId}/automation-delay`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data.automationDelay === 'number') {
+            setAutomationDelay(data.automationDelay);
+            setInitialAutomationDelay(data.automationDelay);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching automation delay settings:", error);
+      }
+    };
+    
+    if (agentId) {
+      fetchUserAutomationDelay();
+    }
+  }, [agentId]);
 
   // Fetch customer flashback data when conversation is loaded
   useEffect(() => {

@@ -3,11 +3,17 @@ import { Request, Response } from "express";
 import { Message, Conversation } from "@shared/schema";
 import OpenAI from "openai";
 import { WebSocket } from "ws";
+import { clients } from "./routes";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
+
+// Log warning if API key is missing
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('Warning: OPENAI_API_KEY is not set. LLM responses will return fallback messages.');
+}
 
 /**
  * Generate a response using the OpenAI API
@@ -94,7 +100,7 @@ export async function handleLlmRequest(req: Request, res: Response) {
     if (promptId) {
       const prompt = await storage.getLlmPrompt(promptId);
       if (prompt) {
-        systemPrompt = prompt.systemPrompt || undefined;
+        systemPrompt = prompt.prompt || undefined;
       }
     }
     
@@ -112,9 +118,6 @@ export async function handleLlmRequest(req: Request, res: Response) {
 
     // If autoSend is true, send the message directly to the conversation
     if (autoSend === true) {
-      // Import the WebSocket clients map
-      const { clients } = require('./routes');
-      
       // If there's an agent assigned, get their automationDelay setting
       let automationDelay = 3000; // Default delay is 3 seconds (3000ms)
       if (conversation.agentId) {

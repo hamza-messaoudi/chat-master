@@ -678,6 +678,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 7. User Settings Routes
+  
+  // Get user automation delay
+  app.get('/api/users/:id/automation-delay', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the user
+      const user = await storage.getUser(Number(id));
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      return res.json({ 
+        id: user.id,
+        automationDelay: user.automationDelay ? user.automationDelay / 1000 : 3 // Convert from milliseconds to seconds for client
+      });
+    } catch (error) {
+      console.error('Error fetching user automation delay:', error);
+      return res.status(500).json({ error: 'Failed to fetch automation delay' });
+    }
+  });
+  
+  // Update user automation delay
   app.patch('/api/users/:id/automation-delay', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
