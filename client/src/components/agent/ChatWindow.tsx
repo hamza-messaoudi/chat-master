@@ -1191,14 +1191,14 @@ export default function ChatWindow({
                       Default AI Prompt
                     </Label>
                     <Select
-                      value={defaultPromptId?.toString() || ""}
-                      onValueChange={(value) => setDefaultPromptId(value ? Number(value) : null)}
+                      value={defaultPromptId?.toString() || "none"}
+                      onValueChange={(value) => setDefaultPromptId(value !== "none" ? Number(value) : null)}
                     >
                       <SelectTrigger id="default-prompt" className="w-full">
                         <SelectValue placeholder="Select a default template" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No default (use first available)</SelectItem>
+                        <SelectItem value="none">No default (use first available)</SelectItem>
                         {llmPrompts?.map((prompt) => (
                           <SelectItem key={prompt.id} value={prompt.id.toString()}>
                             {prompt.title}
