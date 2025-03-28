@@ -2,6 +2,7 @@ import { storage } from "./storage";
 import { Request, Response } from "express";
 import { Message, Conversation } from "@shared/schema";
 import OpenAI from "openai";
+import { WebSocket } from "ws";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -72,7 +73,7 @@ export async function generateLlmResponse(
  */
 export async function handleLlmRequest(req: Request, res: Response) {
   try {
-    const { conversationId, promptId, customPrompt } = req.body;
+    const { conversationId, promptId, customPrompt, autoSend } = req.body;
 
     if (!conversationId) {
       return res.status(400).json({ error: "Conversation ID is required" });
@@ -102,14 +103,52 @@ export async function handleLlmRequest(req: Request, res: Response) {
       systemPrompt = customPrompt;
     }
 
-    // Generate the response using only the conversation and system prompt
-    const response = await generateLlmResponse(
+    // Generate the response using the conversation and system prompt
+    const generatedResponse = await generateLlmResponse(
       conversation,
       messages,
       systemPrompt,
     );
 
-    res.status(200).json({ response });
+    // If autoSend is true, send the message directly to the conversation
+    if (autoSend === true) {
+      // Import the WebSocket clients map
+      const { clients } = require('./routes');
+      
+      // Create a new message from the agent
+      const newMessage = await storage.createMessage({
+        conversationId,
+        senderId: `agent-${conversation.agentId || 1}`, // Use conversation's agent ID or default to 1
+        isFromAgent: true,
+        content: generatedResponse
+      });
+      
+      // Broadcast to the customer
+      const customerWs = clients.get(conversation.customerId);
+      if (customerWs && customerWs.readyState === WebSocket.OPEN) {
+        customerWs.send(JSON.stringify({
+          type: 'message',
+          payload: newMessage
+        }));
+      }
+      
+      // Broadcast to the agent if assigned
+      if (conversation.agentId) {
+        const agentWs = clients.get(`agent-${conversation.agentId}`);
+        if (agentWs && agentWs.readyState === WebSocket.OPEN) {
+          agentWs.send(JSON.stringify({
+            type: 'message',
+            payload: newMessage
+          }));
+        }
+      }
+      
+      // Return the sent message
+      return res.status(200).json({ message: newMessage });
+    }
+    
+    // Otherwise just return the generated response to be added to input field
+    res.status(200).json({ response: generatedResponse });
   } catch (error) {
     console.error("Error generating LLM response:", error);
     res.status(500).json({ error: "Failed to generate response" });

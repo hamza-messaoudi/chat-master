@@ -16,14 +16,14 @@ import { partnerAuthMiddleware } from "./partners";
 import { handleLlmRequest } from "./llm";
 import { generateFlashbackProfile } from "./flashback";
 
+// Store client connections - exported to be used in other modules
+export const clients = new Map<string, WebSocket>();
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // Set up WebSocket server
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  // Store client connections
-  const clients = new Map<string, WebSocket>();
   
   wss.on('connection', (ws, req) => {
     const clientId = req.url?.split('clientId=')[1]?.split('&')[0] || '';
@@ -81,6 +81,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }));
                 }
               });
+            }
+            
+            // If message is from customer, automatically generate an LLM response
+            if (!isFromAgent) {
+              // Get the default LLM prompt for the conversation's agent
+              // or use the first available prompt
+              setTimeout(async () => {
+                try {
+                  // Get all LLM prompts for this agent
+                  const agentId = conversation.agentId || 1; // Default to agent 1 if not assigned
+                  const llmPrompts = await storage.getLlmPromptsByAgentId(agentId);
+                  
+                  // Get all messages from the conversation for context
+                  const messages = await storage.getMessagesByConversationId(conversationId);
+                  
+                  let systemPrompt: string | undefined;
+                  
+                  if (llmPrompts && llmPrompts.length > 0) {
+                    // Use the first prompt as default
+                    systemPrompt = llmPrompts[0].systemPrompt || undefined;
+                  }
+                  
+                  // Generate the LLM response
+                  const { handleLlmRequest } = await import('./llm');
+                  
+                  // Create a mock request and response to use the existing handler
+                  const mockReq = {
+                    body: {
+                      conversationId,
+                      autoSend: true,
+                      ...(systemPrompt && { customPrompt: systemPrompt })
+                    }
+                  } as Request;
+                  
+                  const mockRes = {
+                    status: (code: number) => ({
+                      json: (data: any) => {
+                        console.log(`Auto LLM response for conversation ${conversationId} sent with status ${code}`);
+                      }
+                    })
+                  } as unknown as Response;
+                  
+                  // Call the LLM handler to generate and send the response
+                  await handleLlmRequest(mockReq, mockRes);
+                } catch (error) {
+                  console.error(`Error auto-generating LLM response for conversation ${conversationId}:`, error);
+                }
+              }, 1000); // Small delay to simulate natural response time
             }
           }
         } else if (data.type === 'typing') {
