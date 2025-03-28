@@ -49,6 +49,7 @@ export const llmPrompts = pgTable("llm_prompts", {
   agentId: integer("agent_id").references(() => users.id),
   title: text("title").notNull(),
   prompt: text("prompt").notNull(),
+  systemPrompt: text("system_prompt"),
   category: text("category").default("general"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -109,6 +110,7 @@ export const insertLlmPromptSchema = createInsertSchema(llmPrompts).pick({
   agentId: true,
   title: true,
   prompt: true,
+  systemPrompt: true,
   category: true,
 });
 

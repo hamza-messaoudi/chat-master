@@ -62,6 +62,7 @@ export default function ChatWindow({
   );
   const [newPromptTitle, setNewPromptTitle] = useState("");
   const [newPromptContent, setNewPromptContent] = useState("");
+  const [newSystemPrompt, setNewSystemPrompt] = useState("");
   const [newPromptCategory, setNewPromptCategory] = useState("general");
 
   // Command management states
@@ -340,6 +341,7 @@ export default function ChatWindow({
           agentId,
           title: newPromptTitle,
           prompt: newPromptContent,
+          systemPrompt: newSystemPrompt,
           category: newPromptCategory,
         }),
       });
@@ -354,6 +356,7 @@ export default function ChatWindow({
       // Reset form fields
       setNewPromptTitle("");
       setNewPromptContent("");
+      setNewSystemPrompt("");
       setNewPromptCategory("general");
       setShowNewPromptForm(false);
 
@@ -381,6 +384,7 @@ export default function ChatWindow({
   const handleSavePrompt = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPromptTitle.trim() || !newPromptContent.trim()) return;
+    // Note: System prompt is optional, so we don't need to check if it's empty
 
     createLlmPrompt.mutate();
   };
@@ -1399,8 +1403,21 @@ export default function ChatWindow({
                         </div>
 
                         <div className="space-y-1">
+                          <Label htmlFor="system-prompt" className="text-xs">
+                            System Prompt
+                          </Label>
+                          <Textarea
+                            id="system-prompt"
+                            value={newSystemPrompt}
+                            onChange={(e) => setNewSystemPrompt(e.target.value)}
+                            placeholder="System instructions that define AI behavior and limitations..."
+                            className="min-h-[80px] text-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
                           <Label htmlFor="prompt-content" className="text-xs">
-                            Prompt Template
+                            User Prompt Template
                           </Label>
                           <Textarea
                             id="prompt-content"

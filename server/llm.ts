@@ -18,6 +18,7 @@ export async function generateLlmResponse(
   conversation: Conversation,
   messages: Message[],
   promptTemplate?: string,
+  systemPrompt?: string | null,
 ): Promise<string> {
   try {
     // Format the conversation history for context
@@ -32,13 +33,15 @@ export async function generateLlmResponse(
     // Create a system message with instructions and context
     const systemMessage: OpenAI.ChatCompletionSystemMessageParam = {
       role: "system",
-      content: `You are a helpful customer support agent. 
-      The customer ID is ${conversation.customerId}. 
-      The conversation status is ${conversation.status}.
-      
-      ${promptTemplate ? `Use the following template for your response: ${promptTemplate}` : ""}
-      
-      ${prompt}`,
+      content: systemPrompt ? 
+        systemPrompt :
+        `You are a helpful customer support agent. 
+        The customer ID is ${conversation.customerId}. 
+        The conversation status is ${conversation.status}.
+        
+        ${promptTemplate ? `Use the following template for your response: ${promptTemplate}` : ""}
+        
+        ${prompt}`,
     };
 
     // Combine all messages for the API request
@@ -91,11 +94,13 @@ export async function handleLlmRequest(req: Request, res: Response) {
     let promptTemplate;
 
     // If a prompt ID is provided, get the prompt from storage
+    let systemPrompt: string | undefined;
     if (promptId) {
       const prompt = await storage.getLlmPrompt(promptId);
       if (prompt) {
         promptText = prompt.prompt;
         promptTemplate = prompt.title;
+        systemPrompt = prompt.systemPrompt || undefined;
       }
     }
 
@@ -110,6 +115,7 @@ export async function handleLlmRequest(req: Request, res: Response) {
       conversation,
       messages,
       promptTemplate,
+      systemPrompt,
     );
 
     res.status(200).json({ response });
