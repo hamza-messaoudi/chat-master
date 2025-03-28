@@ -139,6 +139,14 @@ export default function ChatWindow({
     queryKey: [`/api/llm-prompts/${agentId}`],
   });
 
+  // Set first prompt as default when prompts are loaded
+  useEffect(() => {
+    if (llmPrompts && llmPrompts.length > 0) {
+      // Always set the first prompt as default
+      setDefaultPromptId(llmPrompts[0].id);
+    }
+  }, [llmPrompts]);
+
   // Scroll to bottom when messages change and mark messages as read
   useEffect(() => {
     if (messagesEndRef.current) {
