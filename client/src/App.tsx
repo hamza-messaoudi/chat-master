@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import CustomerPage from "@/pages/customer";
 import AgentPage from "@/pages/agent";
 import PartnerDocs from "@/pages/partner-docs";
+import EmbeddableChatPage from "@/pages/embedChatComponent";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/customer/:conversationId" component={CustomerPage} />
       <Route path="/agent" component={AgentPage} />
       <Route path="/partner-docs" component={PartnerDocs} />
+      <Route path="/chat-embed" component={EmbeddableChatPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
