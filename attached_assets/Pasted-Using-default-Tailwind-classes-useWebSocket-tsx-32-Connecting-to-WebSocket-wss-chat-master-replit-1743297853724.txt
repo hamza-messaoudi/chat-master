@@ -1,0 +1,80 @@
+Using default Tailwind classes
+useWebSocket.tsx:32 Connecting to WebSocket: wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx
+useWebSocket.tsx:94 WebSocket connection to 'wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx' failed: WebSocket is closed before the connection is established.
+useWebSocket.useEffect @ useWebSocket.tsx:94
+react-stack-bottom-frame @ react-dom-client.development.js:23708
+runWithFiberInDEV @ react-dom-client.development.js:544
+commitHookEffectListUnmount @ react-dom-client.development.js:10854
+commitHookPassiveUnmountEffects @ react-dom-client.development.js:10895
+disconnectPassiveEffect @ react-dom-client.development.js:13055
+doubleInvokeEffectsOnFiber @ react-dom-client.development.js:15716
+runWithFiberInDEV @ react-dom-client.development.js:544
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15679
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15686
+commitDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15728
+flushPassiveEffects @ react-dom-client.development.js:15493
+commitRootImpl @ react-dom-client.development.js:15413
+commitRoot @ react-dom-client.development.js:15273
+commitRootWhenReady @ react-dom-client.development.js:14584
+performWorkOnRoot @ react-dom-client.development.js:14505
+performSyncWorkOnRoot @ react-dom-client.development.js:15970
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:15830
+commitRootImpl @ react-dom-client.development.js:15422
+commitRoot @ react-dom-client.development.js:15273
+commitRootWhenReady @ react-dom-client.development.js:14584
+performWorkOnRoot @ react-dom-client.development.js:14505
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:15955
+performWorkUntilDeadline @ scheduler.development.js:44
+useWebSocket.tsx:32 Connecting to WebSocket: wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx
+useWebSocket.tsx:70 WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}isTrusted: truebubbles: falsecancelBubble: falsecancelable: falsecomposed: falsecurrentTarget: WebSocket {url: 'wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx', readyState: 3, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}defaultPrevented: falseeventPhase: 0returnValue: truesrcElement: WebSocket {url: 'wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx', readyState: 3, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}target: WebSocket {url: 'wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx', readyState: 3, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}timeStamp: 1484.2000000029802type: "error"[[Prototype]]: Event
+overrideMethod @ hook.js:608
+error @ intercept-console-error.js:56
+useWebSocket.useCallback[connectWebSocket] @ useWebSocket.tsx:70
+useWebSocket.tsx:55 WebSocket connection closed 1006 
+useWebSocket.tsx:37 WebSocket connection established
+useWebSocket.tsx:32 Connecting to WebSocket: wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx
+useWebSocket.tsx:55 WebSocket connection closed 1006 
+useWebSocket.tsx:37 WebSocket connection established
+useWebSocket.tsx:32 Connecting to WebSocket: wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx
+useWebSocket.tsx:55 WebSocket connection closed 1005 
+useWebSocket.tsx:37 WebSocket connection established
+useWebSocket.tsx:32 Connecting to WebSocket: wss://chat-master.replit.app/ws?clientId=anon-vd765af187-m8uwtzfx
+useWebSocket.tsx:55 WebSocket connection closed 1005 
+useWebSocket.tsx:37 
