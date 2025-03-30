@@ -24,10 +24,14 @@ export function useWebSocket(clientId: string) {
       const protocol = typeof window !== 'undefined' ? 
         (window.location.protocol === 'https:' ? 'wss:' : 'ws:') : 'wss:';
       
-      // In a real implementation, use environment variables to determine the WebSocket URL
-      const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
+      // Use environment variable or fallback to current domain with port 5000
+      const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 
+        `${protocol}//${window.location.hostname}:5000`;
       
-      const ws = new WebSocket(`${wsUrl}/ws?clientId=${clientId}`);
+      const wsEndpoint = `${wsUrl}/ws?clientId=${clientId}`;
+      console.log('Connecting to WebSocket:', wsEndpoint);
+      
+      const ws = new WebSocket(wsEndpoint);
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
